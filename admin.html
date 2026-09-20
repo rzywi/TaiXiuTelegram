@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý đơn hàng — Tea &amp; Cafe</title>
+    <meta name="description" content="Trang quản lý đơn hàng của Tea & Cafe.">
+    <meta name="theme-color" content="#6f4328">
+    <meta name="robots" content="noindex">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%236f4328'/%3E%3Cpath d='M17 27h24v9a11 11 0 0 1-11 11h-2a11 11 0 0 1-11-11z' fill='%23fdfbf8'/%3E%3Cpath d='M41 29h4a5.5 5.5 0 0 1 0 11h-4' fill='none' stroke='%23fdfbf8' stroke-width='3.5'/%3E%3Cpath d='M25 19c2.5-3.5 6.5-3.5 9 0M31 13c2.5-3.5 6.5-3.5 9 0' stroke='%23e8c9a3' stroke-width='3.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+<!-- ===================== HEADER ===================== -->
+
+<header class="header">
+    <div class="container header-inner">
+
+        <a href="index.html" class="logo" aria-label="Tea & Cafe - Trang chủ">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 9h12v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V9z"/>
+                <path d="M16 10.5h1.5a2.75 2.75 0 0 1 0 5.5H16"/>
+                <path d="M7.5 3.5c0 1-1 1-1 2s1 1 1 2M11.5 3.5c0 1-1 1-1 2s1 1 1 2"/>
+            </svg>
+            <span class="logo-text"><span>TEA</span> &amp; CAFE</span>
+        </a>
+
+        <nav class="menu" id="mainMenu" aria-label="Menu chính">
+            <a href="index.html">Trang chủ</a>
+            <a href="sanpham.html">Sản phẩm</a>
+        </nav>
+
+        <div class="header-actions">
+            <button type="button" id="adminLogout" class="login-link js-logout">Đăng xuất</button>
+        </div>
+
+    </div>
+</header>
+
+<main>
+
+    <!-- ===================== QUẢN LÝ ĐƠN HÀNG ===================== -->
+
+    <section class="admin-section">
+        <div class="container">
+
+            <div class="admin-title">
+                <p class="eyebrow">Tea &amp; Cafe</p>
+                <h1>Quản lý đơn hàng</h1>
+            </div>
+
+            <div class="admin-stats">
+                <div class="stat-card">
+                    <div class="stat-icon">🧾</div>
+                    <div>
+                        <strong id="statOrders">0</strong>
+                        <span>Tổng đơn hàng</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⏳</div>
+                    <div>
+                        <strong id="statPending">0</strong>
+                        <span>Chờ xác nhận</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💰</div>
+                    <div>
+                        <strong id="statRevenue">0đ</strong>
+                        <span>Doanh thu</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="admin-info">
+                <strong>Xin chào, <span id="adminName">Admin</span> 👋</strong>
+                <p>Danh sách đơn hàng của khách hàng đặt từ website</p>
+            </div>
+
+            <div id="adminOrders">
+                <!-- Đơn hàng sẽ được JavaScript hiển thị ở đây -->
+            </div>
+
+        </div>
+    </section>
+
+</main>
+
+<script src="js/script.js"></script>
+
+</body>
+</html>

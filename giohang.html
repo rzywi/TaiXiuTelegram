@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giỏ hàng — Tea &amp; Cafe</title>
+    <meta name="description" content="Kiểm tra giỏ hàng và đặt hàng tại Tea & Cafe — thanh toán khi nhận hàng hoặc chuyển khoản ngân hàng.">
+    <meta name="theme-color" content="#6f4328">
+    <meta property="og:title" content="Giỏ hàng — Tea & Cafe">
+    <meta property="og:description" content="Kiểm tra giỏ hàng và đặt hàng tại Tea & Cafe.">
+    <meta property="og:type" content="website">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%236f4328'/%3E%3Cpath d='M17 27h24v9a11 11 0 0 1-11 11h-2a11 11 0 0 1-11-11z' fill='%23fdfbf8'/%3E%3Cpath d='M41 29h4a5.5 5.5 0 0 1 0 11h-4' fill='none' stroke='%23fdfbf8' stroke-width='3.5'/%3E%3Cpath d='M25 19c2.5-3.5 6.5-3.5 9 0M31 13c2.5-3.5 6.5-3.5 9 0' stroke='%23e8c9a3' stroke-width='3.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+<!-- ===================== HEADER ===================== -->
+
+<header class="header">
+    <div class="container header-inner">
+
+        <a href="index.html" class="logo" aria-label="Tea & Cafe - Trang chủ">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 9h12v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V9z"/>
+                <path d="M16 10.5h1.5a2.75 2.75 0 0 1 0 5.5H16"/>
+                <path d="M7.5 3.5c0 1-1 1-1 2s1 1 1 2M11.5 3.5c0 1-1 1-1 2s1 1 1 2"/>
+            </svg>
+            <span class="logo-text"><span>TEA</span> &amp; CAFE</span>
+        </a>
+
+        <nav class="menu" id="mainMenu" aria-label="Menu chính">
+            <a href="index.html">Trang chủ</a>
+            <a href="sanpham.html">Sản phẩm</a>
+            <a href="gioithieu.html">Giới thiệu</a>
+            <a href="lienhe.html">Liên hệ</a>
+        </nav>
+
+        <div class="header-actions">
+            <a href="giohang.html" class="header-cart" aria-label="Giỏ hàng">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="9" cy="20" r="1.6"/>
+                    <circle cx="17" cy="20" r="1.6"/>
+                    <path d="M2.5 3.5h2.4l2.5 11.5h10.7l2.1-8.5H6"/>
+                </svg>
+                Giỏ hàng
+                <span class="cart-badge">0</span>
+            </a>
+            <a href="dangnhap.html" class="login-link">Đăng nhập</a>
+        </div>
+
+        <button type="button" class="nav-toggle" id="navToggle" aria-label="Mở menu" aria-expanded="false" aria-controls="mainMenu">
+            <span></span><span></span><span></span>
+        </button>
+
+    </div>
+</header>
+
+<main>
+
+    <!-- ===================== BANNER ===================== -->
+
+    <div class="page-banner">
+        <div>
+            <p class="eyebrow">Tea &amp; Cafe</p>
+            <h1>Giỏ hàng</h1>
+            <span>Kiểm tra sản phẩm và đặt hàng</span>
+        </div>
+    </div>
+
+    <!-- ===================== GIỎ HÀNG ===================== -->
+
+    <section class="section">
+        <div class="container">
+            <div class="cart-layout">
+
+                <!-- Danh sách sản phẩm -->
+                <div class="cart-list">
+                    <div class="cart-title">
+                        <h2>Sản phẩm trong giỏ</h2>
+                        <span class="cart-count">0 sản phẩm</span>
+                    </div>
+                    <a class="continue" href="sanpham.html">← Tiếp tục mua hàng</a>
+                </div>
+
+                <!-- Tóm tắt & thanh toán -->
+                <aside class="cart-summary">
+                    <h2>Thanh toán</h2>
+                    <div class="summary-row"><span>Tiền hàng</span><strong id="sumSubtotal">0đ</strong></div>
+                    <div class="summary-row"><span>Phí giao hàng</span><strong id="sumShip">0đ</strong></div>
+                    <div class="summary-row"><span>Giảm giá</span><strong id="sumDiscount">0đ</strong></div>
+                    <div class="summary-total"><span>Tổng cộng</span><strong id="sumTotal">0đ</strong></div>
+
+                    <div class="checkout-box" id="checkoutBox">
+                        <h3>Thông tin nhận hàng</h3>
+                        <form id="checkoutForm">
+                            <div class="form-group">
+                                <label for="checkoutName">Họ và tên</label>
+                                <input id="checkoutName" type="text" required placeholder="Nhập họ và tên">
+                            </div>
+                            <div class="form-group">
+                                <label for="checkoutPhone">Số điện thoại</label>
+                                <input id="checkoutPhone" type="number" required placeholder="Nhập số điện thoại">
+                            </div>
+                            <div class="form-group">
+                                <label for="checkoutAddress">Địa chỉ</label>
+                                <textarea id="checkoutAddress" rows="3" required placeholder="Nhập địa chỉ nhận hàng"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="paymentMethod">Phương thức thanh toán</label>
+                                <select id="paymentMethod">
+                                    <option value="COD">Thanh toán khi nhận hàng (COD)</option>
+                                    <option value="BANK">Chuyển khoản ngân hàng</option>
+                                </select>
+                            </div>
+                            <div id="bankInfo" class="bank-info" style="display:none">
+                                <strong>Thông tin chuyển khoản</strong>
+                                <p>Ngân hàng: Vietcombank</p>
+                                <p>Số tài khoản: 0123456789</p>
+                                <p>Chủ tài khoản: BAO</p>
+                                <p>Nội dung: TEACAFE + Họ tên</p>
+                                <img src="Bank.png" alt="">
+                            </div>
+                            <button type="submit" class="btn btn-block checkout">Đặt hàng &amp; thanh toán</button>
+                        </form>
+                    </div>
+                </aside>
+
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<!-- ===================== FOOTER ===================== -->
+
+<footer class="footer">
+    <div class="container">
+        <div class="footer-grid">
+
+            <div class="footer-brand">
+                <a href="index.html" class="logo footer-logo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M4 9h12v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V9z"/>
+                        <path d="M16 10.5h1.5a2.75 2.75 0 0 1 0 5.5H16"/>
+                        <path d="M7.5 3.5c0 1-1 1-1 2s1 1 1 2M11.5 3.5c0 1-1 1-1 2s1 1 1 2"/>
+                    </svg>
+                    <span class="logo-text"><span>TEA</span> &amp; CAFE</span>
+                </a>
+                <p>Nơi mang đến những ly trà và cà phê thơm ngon, được chuẩn bị tỉ mỉ từ nguyên liệu chọn lọc mỗi ngày.</p>
+                <div class="socials">
+                    <a href="#" aria-label="Facebook"><svg viewBox="0 0 24 24"><path d="M13.5 21v-7h2.4l.4-3h-2.8V9.1c0-.9.3-1.5 1.6-1.5h1.4V4.9c-.3-.1-1.2-.2-2.2-.2-2.2 0-3.7 1.3-3.7 3.8V11H8v3h2.6v7h2.9z"/></svg></a>
+                    <a href="#" aria-label="Instagram"><svg viewBox="0 0 24 24"><path d="M12 4.3c2.5 0 2.8 0 3.8.1 1 0 1.5.2 1.8.3.5.2.8.4 1.1.7.3.3.5.6.7 1.1.1.3.3.9.3 1.8.1 1 .1 1.3.1 3.8s0 2.8-.1 3.8c0 1-.2 1.5-.3 1.8-.2.5-.4.8-.7 1.1-.3.3-.6.5-1.1.7-.3.1-.9.3-1.8.3-1 .1-1.3.1-3.8.1s-2.8 0-3.8-.1c-1 0-1.5-.2-1.8-.3-.5-.2-.8-.4-1.1-.7-.3-.3-.5-.6-.7-1.1-.1-.3-.3-.9-.3-1.8-.1-1-.1-1.3-.1-3.8s0-2.8.1-3.8c0-1 .2-1.5.3-1.8.2-.5.4-.8.7-1.1.3-.3.6-.5 1.1-.7.3-.1.9-.3 1.8-.3 1-.1 1.3-.1 3.8-.1M12 2.6c-2.6 0-2.9 0-3.9.1-1 0-1.7.2-2.3.4-.6.3-1.2.6-1.7 1.1-.5.5-.9 1.1-1.1 1.7-.2.6-.4 1.3-.4 2.3-.1 1-.1 1.3-.1 3.9s0 2.9.1 3.9c0 1 .2 1.7.4 2.3.3.6.6 1.2 1.1 1.7.5.5 1.1.9 1.7 1.1.6.2 1.3.4 2.3.4 1 .1 1.3.1 3.9.1s2.9 0 3.9-.1c1 0 1.7-.2 2.3-.4.6-.3 1.2-.6 1.7-1.1.5-.5.9-1.1 1.1-1.7.2-.6.4-1.3.4-2.3.1-1 .1-1.3.1-3.9s0-2.9-.1-3.9c0-1-.2-1.7-.4-2.3-.3-.6-.6-1.2-1.1-1.7-.5-.5-1.1-.9-1.7-1.1-.6-.2-1.3-.4-2.3-.4-1-.1-1.3-.1-3.9-.1zm0 4.4a4.9 4.9 0 1 0 0 9.8 4.9 4.9 0 0 0 0-9.8zm0 8.1a3.2 3.2 0 1 1 0-6.4 3.2 3.2 0 0 1 0 6.4zm5.1-8.3a1.1 1.1 0 1 0 0 2.3 1.1 1.1 0 0 0 0-2.3z"/></svg></a>
+                    <a href="#" aria-label="YouTube"><svg viewBox="0 0 24 24"><path d="M21.6 7.2a2.5 2.5 0 0 0-1.8-1.8C18.3 5 12 5 12 5s-6.3 0-7.8.4A2.5 2.5 0 0 0 2.4 7.2 26 26 0 0 0 2 12a26 26 0 0 0 .4 4.8 2.5 2.5 0 0 0 1.8 1.8c1.5.4 7.8.4 7.8.4s6.3 0 7.8-.4a2.5 2.5 0 0 0 1.8-1.8A26 26 0 0 0 22 12a26 26 0 0 0-.4-4.8zM10 15.2V8.8l5.2 3.2L10 15.2z"/></svg></a>
+                </div>
+            </div>
+
+            <nav class="footer-col footer-links" aria-label="Liên kết nhanh">
+                <h3>Liên kết</h3>
+                <a href="index.html">Trang chủ</a>
+                <a href="sanpham.html">Sản phẩm</a>
+                <a href="gioithieu.html">Giới thiệu</a>
+                <a href="lienhe.html">Liên hệ</a>
+                <a href="giohang.html">Giỏ hàng</a>
+                <a href="dangnhap.html">Đăng nhập</a>
+            </nav>
+
+            <div class="footer-col">
+                <h3>Liên hệ</h3>
+                <p><span>📍</span><span>Hà Nội, Việt Nam</span></p>
+                <p><span>☎</span><span>097 368 3235</span></p>
+                <p><span>✉</span><span>25003347@eaut.edu.vn</span></p>
+            </div>
+
+            <div class="footer-col">
+                <h3>Giờ mở cửa</h3>
+                <p><span>🗓️</span><span>Thứ 2 – Chủ nhật</span></p>
+                <p><span>⏰</span><span>8:00 – 22:00</span></p>
+            </div>
+
+        </div>
+        <div class="copyright">© <span id="year">2026</span> Tea &amp; Cafe. Bảo lưu mọi quyền.</div>
+    </div>
+</footer>
+
+<script src="js/script.js"></script>
+
+</body>
+</html>
