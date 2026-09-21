@@ -505,13 +505,10 @@ async function poll() {
 
 
     } catch (error) {
-
-        console.error(
-            "⚠️ Không kết nối được MySQL —",
-            "các lệnh dùng database sẽ báo lỗi:",
-            error.message
-        );
-    }
+    console.error("❌ MYSQL ERROR:", error);
+    console.error("❌ MYSQL MESSAGE:", error.message);
+    console.error("❌ MYSQL CODE:", error.code);
+}
 
 
     console.log(
