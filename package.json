@@ -20,10 +20,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/TEN_GITHUB/TaiXiuTelegram.git"
+    "url": "git+https://github.com/rzywi/TaiXiuTelegram.git"
   },
   "bugs": {
-    "url": "https://github.com/TEN_GITHUB/TaiXiuTelegram/issues"
+    "url": "https://github.com/rzywi/TaiXiuTelegram/issues"
   },
-  "homepage": "https://github.com/TEN_GITHUB/TaiXiuTelegram#readme"
+  "homepage": "https://github.com/rzywi/TaiXiuTelegram#readme"
 }
