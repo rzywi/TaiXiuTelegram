@@ -1,37 +1,80 @@
 /* =====================================================
    BOT CÁ NHÂN — ENTRY POINT
-   Tất cả chức năng nằm trong thư mục bot/, mỗi nhóm
-   chức năng một file. Muốn thêm chức năng mới: tạo file
-   trong bot/ rồi thêm 1 dòng require vào danh sách dưới.
+   Render Web Service + Telegram Long Polling
 ===================================================== */
 
 require("dotenv").config();
 
 const fs = require("fs");
+const http = require("http");
 const core = require("./bot/core");
 
-/* Danh sách module chức năng */
+/* =====================================================
+   RENDER HTTP SERVER
+   Render yêu cầu Web Service phải listen PORT
+===================================================== */
+
+const PORT = Number(process.env.PORT) || 10000;
+
+const server = http.createServer((req, res) => {
+    if (req.url === "/" || req.url === "/health") {
+        res.writeHead(200, {
+            "Content-Type": "application/json; charset=utf-8"
+        });
+
+        res.end(JSON.stringify({
+            ok: true,
+            service: "TaiXiuTelegram",
+            status: "running"
+        }));
+
+        return;
+    }
+
+    res.writeHead(404, {
+        "Content-Type": "application/json; charset=utf-8"
+    });
+
+    res.end(JSON.stringify({
+        ok: false,
+        error: "Not Found"
+    }));
+});
+
+server.listen(PORT, "0.0.0.0", () => {
+    console.log(`🌐 HTTP server listening on port ${PORT}`);
+});
+
+
+/* =====================================================
+   DANH SÁCH MODULE
+===================================================== */
+
 const modules = [
-    require("./bot/ai"),                    // chat AI
-    require("./bot/games/portal"),          // engine cổng đặt cược
-    require("./bot/games/taixiu"),          // Tài Xỉu
-    require("./bot/games/baucua"),          // Bầu Cua Tôm Cá
-    require("./bot/games/xocdia"),          // Xóc Đĩa
-    require("./bot/games/roulette"),        // Roulette
-    require("./bot/games/blackjack"),       // Xì Dách
-    require("./bot/games/hilo"),            // Cao/Thấp
-    require("./bot/games/slot"),            // Slot machine
-    require("./bot/games/coin"),            // Tung đồng xu
-    require("./bot/games/dice"),            // Đoán xúc xắc
-    require("./bot/points"),                // quản lý điểm
-    require("./bot/notes"),                 // ghi chú
-    require("./bot/reminders"),             // nhắc nhở
-    require("./bot/nhac"),                  // nhạc SoundCloud
-    require("./bot/tools"),                 // công cụ tiện ích
-    require("./bot/power")                  // shell / eval
+    require("./bot/ai"),
+    require("./bot/games/portal"),
+    require("./bot/games/taixiu"),
+    require("./bot/games/baucua"),
+    require("./bot/games/xocdia"),
+    require("./bot/games/roulette"),
+    require("./bot/games/blackjack"),
+    require("./bot/games/hilo"),
+    require("./bot/games/slot"),
+    require("./bot/games/coin"),
+    require("./bot/games/dice"),
+    require("./bot/points"),
+    require("./bot/notes"),
+    require("./bot/reminders"),
+    require("./bot/nhac"),
+    require("./bot/tools"),
+    require("./bot/power")
 ];
 
-/* Gom toàn bộ lệnh + nút bấm + handler từ các module */
+
+/* =====================================================
+   GOM COMMAND / CALLBACK / PLAIN TEXT
+===================================================== */
+
 const commands = {
     "/start": (chatId) => core.send(chatId, HELP_TEXT),
     "/help": (chatId) => core.send(chatId, HELP_TEXT)
@@ -41,16 +84,24 @@ const callbacks = [];
 const plainTextHandlers = [];
 
 for (const m of modules) {
+
     if (m.commands) {
         Object.assign(commands, m.commands);
     }
+
     if (m.callback) {
         callbacks.push(m.callback);
     }
+
     if (m.plainText) {
         plainTextHandlers.push(m.plainText);
     }
 }
+
+
+/* =====================================================
+   HELP
+===================================================== */
 
 const HELP_TEXT =
     "🎰 <b>BOT CÁ NHÂN — TOÀN BỘ LỆNH</b>\n\n" +
@@ -60,199 +111,401 @@ const HELP_TEXT =
         .join("\n");
 
 
-/* =========================
-   XỬ LÝ LỆNH
-========================= */
+/* =====================================================
+   XỬ LÝ COMMAND
+===================================================== */
 
 async function handleCommand(msg) {
 
     const chatId = msg.chat.id;
-    const text = (msg.text || "").trim();
-    const [rawCmd, ...args] = text.split(/\s+/);
-    const cmd = rawCmd.toLowerCase().split("@")[0];
 
-    /* Bot riêng tư: người đầu tiên /start là chủ bot */
+    const text = (msg.text || "").trim();
+
+    const [rawCmd, ...args] = text.split(/\s+/);
+
+    const cmd = rawCmd
+        .toLowerCase()
+        .split("@")[0];
+
+
+    /* Người đầu tiên /start sẽ thành owner */
+
     if (core.getOwner() === null) {
+
         core.setOwner(chatId);
-        await core.send(chatId,
-            "✅ Bạn đã trở thành chủ sở hữu bot.\n\n" + HELP_TEXT);
+
+        await core.send(
+            chatId,
+            "✅ Bạn đã trở thành chủ sở hữu bot.\n\n" +
+            HELP_TEXT
+        );
     }
+
+
+    /* Chỉ owner được sử dụng bot */
 
     if (chatId !== core.getOwner()) {
         return;
     }
 
+
     const handler = commands[cmd];
 
     try {
+
         if (handler) {
-            await handler(chatId, args, msg);
+
+            await handler(
+                chatId,
+                args,
+                msg
+            );
+
         } else {
-            await core.send(chatId,
-                "❓ Lệnh không tồn tại. Gõ /help để xem danh sách.");
+
+            await core.send(
+                chatId,
+                "❓ Lệnh không tồn tại. Gõ /help để xem danh sách."
+            );
         }
+
     } catch (error) {
+
         console.error(error);
-        await core.send(chatId, `⚠️ Lỗi: ${error.message}`);
+
+        await core.send(
+            chatId,
+            `⚠️ Lỗi: ${error.message}`
+        );
     }
 }
 
 
-/* =========================
+/* =====================================================
    CHỐNG CHẠY TRÙNG
-   2 process bot cùng chạy sẽ giành tin nhắn của nhau
-   (Telegram trả 409) → bot lag, tin nhắn thất thường.
-========================= */
+===================================================== */
 
 const LOCK_FILE = ".bot.lock";
 
 if (fs.existsSync(LOCK_FILE)) {
+
     const oldPid = parseInt(
-        fs.readFileSync(LOCK_FILE, "utf8"));
+        fs.readFileSync(
+            LOCK_FILE,
+            "utf8"
+        )
+    );
+
     let alive = false;
+
     try {
+
         process.kill(oldPid, 0);
+
         alive = true;
-    } catch { /* process đã chết */ }
+
+    } catch {
+        /* process cũ đã chết */
+    }
+
 
     if (alive) {
+
         console.error(
-            "❌ Bot đang chạy rồi (PID " + oldPid + ")!\n" +
-            "Không mở 2 bot cùng lúc. Thoát bằng: taskkill /PID " +
-            oldPid + " /F");
+            `❌ Bot đang chạy rồi (PID ${oldPid})!`
+        );
+
         process.exit(1);
     }
 }
 
-fs.writeFileSync(LOCK_FILE, String(process.pid));
+
+/* Ghi PID hiện tại */
+
+fs.writeFileSync(
+    LOCK_FILE,
+    String(process.pid)
+);
+
+
+/* Xóa lock khi dừng */
 
 process.on("SIGINT", () => {
-    try { fs.unlinkSync(LOCK_FILE); } catch {}
+
+    try {
+        fs.unlinkSync(LOCK_FILE);
+    } catch {}
+
     process.exit(0);
 });
-process.on("exit", () => {
-    try { fs.unlinkSync(LOCK_FILE); } catch {}
+
+
+process.on("SIGTERM", () => {
+
+    try {
+        fs.unlinkSync(LOCK_FILE);
+    } catch {}
+
+    process.exit(0);
 });
 
 
-/* =========================
-   XỬ LÝ NÚT BẤM
-========================= */
+process.on("exit", () => {
+
+    try {
+        fs.unlinkSync(LOCK_FILE);
+    } catch {}
+});
+
+
+/* =====================================================
+   CALLBACK
+===================================================== */
 
 async function handleCallback(query) {
 
-    const chatId = query.message?.chat?.id;
+    const chatId =
+        query.message?.chat?.id;
 
-    if (!chatId || chatId !== core.getOwner()) {
+
+    if (
+        !chatId ||
+        chatId !== core.getOwner()
+    ) {
         return;
     }
 
+
     core.answerCb(query.id);
 
+
     for (const cb of callbacks) {
-        if (query.data.startsWith(cb.prefix)) {
-            return cb.handler(query).catch(async error => {
-                console.error(error);
-                core.answerCb(query.id, "⚠️ Có lỗi xảy ra");
-            });
+
+        if (
+            query.data.startsWith(
+                cb.prefix
+            )
+        ) {
+
+            return cb.handler(query)
+                .catch(async error => {
+
+                    console.error(error);
+
+                    core.answerCb(
+                        query.id,
+                        "⚠️ Có lỗi xảy ra"
+                    );
+                });
         }
     }
 }
 
 
-/* =========================
-   LONG POLLING
-========================= */
+/* =====================================================
+   TELEGRAM LONG POLLING
+===================================================== */
 
 async function poll() {
+
     let offset = 0;
 
+
     while (true) {
+
         try {
+
             const response = await fetch(
                 `https://api.telegram.org/bot${core.BOT_TOKEN}/getUpdates`,
                 {
                     method: "POST",
+
                     headers: {
                         "Content-Type": "application/json"
                     },
+
                     body: JSON.stringify({
+
                         offset: offset,
+
                         timeout: 25,
-                        /* Chỉ nhận loại tin cần thiết, bỏ nhiễu */
-                        allowed_updates:
-                            ["message", "callback_query"]
+
+                        allowed_updates: [
+                            "message",
+                            "callback_query"
+                        ]
                     })
                 }
             );
 
-            const data = await response.json();
 
-            if (!data.ok || !data.result) {
+            const data =
+                await response.json();
 
-                /* 409 = có process khác đang lấy tin nhắn */
-                if (data.error_code === 409) {
+
+            if (
+                !data.ok ||
+                !data.result
+            ) {
+
+                /* Telegram 409:
+                   Có bot khác đang polling */
+
+                if (
+                    data.error_code === 409
+                ) {
+
                     console.error(
                         "❌ XUNG ĐỘT: một bot khác đang chạy " +
-                        "(getUpdates bị 409). Đóng process còn lại!");
+                        "(getUpdates bị 409)."
+                    );
                 }
 
-                await new Promise(r => setTimeout(r, 3000));
+
+                await new Promise(
+                    resolve =>
+                        setTimeout(
+                            resolve,
+                            3000
+                        )
+                );
+
                 continue;
             }
 
-            for (const update of data.result) {
-                offset = update.update_id + 1;
 
-                if (update.callback_query) {
-                    handleCallback(update.callback_query)
-                        .catch(console.error);
+            for (
+                const update of data.result
+            ) {
+
+                offset =
+                    update.update_id + 1;
+
+
+                /* Callback button */
+
+                if (
+                    update.callback_query
+                ) {
+
+                    handleCallback(
+                        update.callback_query
+                    ).catch(console.error);
+
                     continue;
                 }
 
-                if (update.message && update.message.text) {
 
-                    const text = update.message.text;
+                /* Message */
 
-                    if (text.startsWith("/")) {
-                        handleCommand(update.message)
-                            .catch(console.error);
-                    } else if (core.getOwner() === null ||
-                               update.message.chat.id === core.getOwner()) {
-                        /* Tin nhắn thường → chat AI */
-                        plainTextHandlers.forEach(h =>
-                            h(update.message.chat.id, text)
-                                .catch(console.error));
+                if (
+                    update.message &&
+                    update.message.text
+                ) {
+
+                    const text =
+                        update.message.text;
+
+
+                    /* Command */
+
+                    if (
+                        text.startsWith("/")
+                    ) {
+
+                        handleCommand(
+                            update.message
+                        ).catch(console.error);
+
+                    }
+
+
+                    /* Tin nhắn thường */
+
+                    else if (
+                        core.getOwner() === null ||
+                        update.message.chat.id ===
+                            core.getOwner()
+                    ) {
+
+                        plainTextHandlers.forEach(
+                            handler => {
+
+                                handler(
+                                    update.message.chat.id,
+                                    text
+                                ).catch(console.error);
+
+                            }
+                        );
                     }
                 }
             }
 
         } catch (error) {
-            console.error("Polling lỗi:", error.message);
-            await new Promise(r => setTimeout(r, 3000));
+
+            console.error(
+                "Polling lỗi:",
+                error.message
+            );
+
+
+            await new Promise(
+                resolve =>
+                    setTimeout(
+                        resolve,
+                        3000
+                    )
+            );
         }
     }
 }
 
 
-/* =========================
-   START
-========================= */
+/* =====================================================
+   START BOT
+===================================================== */
 
 (async () => {
-    /* Chế độ polling: phải xóa webhook cũ nếu có */
-    await core.telegram("deleteWebhook",
-        { drop_pending_updates: false });
 
     try {
+
+        /* Polling thì phải xóa webhook */
+
+        await core.telegram(
+            "deleteWebhook",
+            {
+                drop_pending_updates: false
+            }
+        );
+
+
+        /* Kết nối MySQL */
+
         await core.initDb();
-        for (const m of modules) {
-            if (m.init) await m.init();
+
+
+        /* Khởi tạo module */
+
+        for (
+            const m of modules
+        ) {
+
+            if (m.init) {
+                await m.init();
+            }
         }
-        /* Tải sẵn emoji chuẩn cho ảnh bầu cua (nền, không chờ) */
-        require("./bot/games/emoji").prewarm()
+
+
+        /* Preload emoji */
+
+        require("./bot/games/emoji")
+            .prewarm()
             .catch(() => {});
+
+
     } catch (error) {
+
         console.error(
             "⚠️ Không kết nối được MySQL —",
             "các lệnh dùng database sẽ báo lỗi:",
@@ -260,15 +513,39 @@ async function poll() {
         );
     }
 
-    console.log("🤖 Bot đang chạy (long polling)...");
+
     console.log(
-        process.env.AI_API_KEY || process.env.AI_BASE_URL
-            ? `💬 AI chat bật: ${process.env.AI_MODEL || "mặc định"}`
-            : "💬 AI chat dùng AI miễn phí (điền AI_API_KEY trong .env để dùng AI mạnh hơn)"
+        "🤖 Bot đang chạy (long polling)..."
     );
-    console.log(core.getOwner()
-        ? `🔒 Chế độ riêng tư — chỉ USER_ID ${core.getOwner()} dùng được`
-        : "🔓 Chưa có OWNER_ID — người đầu tiên /start sẽ thành chủ bot");
+
+
+    console.log(
+        process.env.AI_API_KEY ||
+        process.env.AI_BASE_URL
+
+            ? `💬 AI chat bật: ${
+                process.env.AI_MODEL ||
+                "mặc định"
+              }`
+
+            : "💬 AI chat dùng AI miễn phí"
+    );
+
+
+    console.log(
+        core.getOwner()
+
+            ? `🔒 Chế độ riêng tư — chỉ USER_ID ${
+                core.getOwner()
+              } dùng được`
+
+            : "🔓 Chưa có OWNER_ID — " +
+              "người đầu tiên /start sẽ thành chủ bot"
+    );
+
+
+    /* Bắt đầu Telegram polling */
 
     poll();
+
 })();
