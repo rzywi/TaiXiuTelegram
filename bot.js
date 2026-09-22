@@ -509,7 +509,14 @@ async function poll() {
     console.error("❌ MYSQL MESSAGE:", error.message);
     console.error("❌ MYSQL CODE:", error.code);
 }
+   const dns = require("dns").promises;
 
+try {
+    const result = await dns.lookup(process.env.DB_HOST);
+    console.log("🔎 DNS LOOKUP:", result);
+} catch (err) {
+    console.error("❌ DNS LOOKUP ERROR:", err);
+}
 
     console.log(
         "🤖 Bot đang chạy (long polling)..."
