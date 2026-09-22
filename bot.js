@@ -512,16 +512,13 @@ async function poll() {
    const dns = require("dns").promises;
 
 try {
-    const result = await dns.lookup(process.env.DB_HOST);
-    console.log("🔎 DNS LOOKUP:", result);
+    await initDb();
+    console.log("✅ MySQL đã khởi tạo thành công");
 } catch (err) {
-    console.error("❌ DNS LOOKUP ERROR:", err);
+    console.error("❌ Không thể khởi tạo MySQL:", err);
 }
 
-    console.log(
-        "🤖 Bot đang chạy (long polling)..."
-    );
-
+console.log("🤖 Bot đang chạy (long polling)...");
 
     console.log(
         process.env.AI_API_KEY ||
