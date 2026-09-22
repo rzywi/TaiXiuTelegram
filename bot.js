@@ -482,7 +482,11 @@ async function poll() {
 
         /* Kết nối MySQL */
 
+        console.log("🔵 Đang khởi tạo MySQL...");
+
         await core.initDb();
+
+        console.log("🟢 MySQL đã khởi tạo thành công");
 
 
         /* Khởi tạo module */
@@ -505,20 +509,24 @@ async function poll() {
 
 
     } catch (error) {
-    console.error("❌ MYSQL ERROR:", error);
-    console.error("❌ MYSQL MESSAGE:", error.message);
-    console.error("❌ MYSQL CODE:", error.code);
-}
-   const dns = require("dns").promises;
 
-try {
-    await initDb();
-    console.log("✅ MySQL đã khởi tạo thành công");
-} catch (err) {
-    console.error("❌ Không thể khởi tạo MySQL:", err);
-}
+        console.error(
+            "⚠️ Không kết nối được MySQL —",
+            "các lệnh dùng database sẽ báo lỗi:",
+            error.message
+        );
 
-console.log("🤖 Bot đang chạy (long polling)...");
+        console.error("MYSQL CODE:", error.code);
+    }
+
+
+    /* ==============================
+       KHỞI ĐỘNG BOT
+    ============================== */
+
+    console.log(
+        "🤖 Bot đang chạy (long polling)..."
+    );
 
     console.log(
         process.env.AI_API_KEY ||
@@ -531,7 +539,6 @@ console.log("🤖 Bot đang chạy (long polling)...");
 
             : "💬 AI chat dùng AI miễn phí"
     );
-
 
     console.log(
         core.getOwner()
