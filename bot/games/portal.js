@@ -321,13 +321,15 @@ async function handlePortalCallback(query) {
     if (action === "play") {
 
         if (p.bet <= 0) {
-            return core.answerCb(query.id, "Đặt cược trước đã!");
+            return send(chatId,
+                "❌ Chưa có mức cược — bấm +K để tăng cược.");
         }
         if (p.bet > Number(user.balance)) {
-            return core.answerCb(query.id,
-                `Không đủ tiền (còn ${money(user.balance)} VNĐ) — /addpoints`);
+            return send(chatId,
+                `❌ Không đủ tiền (cược ${money(p.bet)} > còn ${money(user.balance)} VNĐ) — giảm cược hoặc /addpoints.`);
         }
 
+        try {
         /* Trừ tiền cược NGAY LẬP TỨC trước khi lắc */
         const afterBet = await deduct(chatId, p.bet);
 
@@ -365,7 +367,19 @@ async function handlePortalCallback(query) {
                 resultPng,
                 await portalText(chatId, p.game, resultText),
                 portalKeyboard(p.game)
-            ).catch(() => refreshPortal(chatId, resultText));
+            ).catch(async () => {
+                /* Ảnh cũ đã bị thu hồi (deleteOld) → gửi tin mới */
+                const sent = await sendDicePhoto(chatId, resultPng,
+                    await portalText(chatId, p.game, resultText))
+                    .catch(() => null);
+                if (sent) {
+                    p.messageId = sent.message_id;
+                    await send(chatId, "👆 Ván xong — bấm nút dưới ảnh để chơi tiếp:",
+                        { reply_markup: portalKeyboard(p.game) });
+                } else {
+                    await refreshPortal(chatId, resultText);
+                }
+            });
         } else {
             await telegram("editMessageText", {
                 chat_id: chatId,
@@ -374,6 +388,16 @@ async function handlePortalCallback(query) {
                 parse_mode: "HTML",
                 reply_markup: portalKeyboard(p.game)
             }).catch(() => refreshPortal(chatId, resultText));
+        }
+        } catch (e) {
+            /* Lỗi giữa ván (DB/Telegram) → báo tin thay vì im lặng */
+            console.error("❌ Portal play lỗi:", e);
+            try {
+                await send(chatId,
+                    `⚠️ Ván lỗi giữa chừng: ${e.message || e}\nTiền cược đã trừ sẽ giữ nguyên — thử bấm lại.`);
+            } catch {}
+            /* Mở lại bàn để có nút bấm */
+            try { await sendPortal(chatId, ""); } catch {}
         }
     }
 }
