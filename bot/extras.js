@@ -6,11 +6,19 @@
 
 const core = require("./core");
 const { send, money, esc, settle, checkBet, credit, recordGame } = core;
+const { iconRowPng } = require("./games/diceimg");
+const { photoRoll, photoResult } = require("./games/suspense");
 
 const lastSpin = new Map(); // chatId -> timestamp
 const SPIN_CD = 60 * 60 * 1000;
 
 const HANDS = { keo: "✌️", bua: "✊", bao: "✋" };
+
+/* oẳn tù tì lắc = viên trắng in ✌️/✊/✋ đổi liên tục */
+function rpsFrame(rolls, shake) {
+    return iconRowPng(
+        [Object.keys(HANDS)[rolls[0] % 3]], shake);
+}
 
 module.exports = {
     commands: {
@@ -47,6 +55,21 @@ module.exports = {
                 return;
             }
             if (!await checkBet(chatId, bet)) return;
+
+            /* animation xúc xắc tay: ✌️✊✋ xoay liên tục 1 tin ảnh */
+            const head = `💸 <b>${money(bet)} VNĐ</b> ra <b>${HANDS[pick]}</b>`;
+            let played = null;
+            try {
+                played = await photoRoll(chatId, rpsFrame, 1, [
+                    `${head}\n\n✌️ <b>Ra tay…</b>`,
+                    `${head}\n\n✊ <b>Oẳn…</b>`,
+                    `${head}\n\n✋ <b>Tù…</b>`,
+                    `${head}\n\n✌️ <b>Tì! MỞ…</b>`
+                ]);
+            } catch {
+                played = null;
+            }
+
             const bot = Object.keys(HANDS)[Math.floor(Math.random() * 3)];
             const beats = { keo: "bao", bao: "bua", bua: "keo" };
             const result = bot === pick ? "draw"
@@ -54,12 +77,29 @@ module.exports = {
             const win = result === "draw" ? bet
                 : result === "win" ? Math.floor(bet * 1.95) : 0;
             const nb = await settle(chatId, "rps", bet, win, `${pick} vs ${bot}`);
-            await send(chatId,
+            const text =
                 `${HANDS[pick]} Bạn vs Bot ${HANDS[bot]}\n\n` +
                 (result === "win" ? `🎉 Thắng! +${money(win)} VNĐ`
                     : result === "draw" ? `🤝 Hòa! Hoàn ${money(bet)} VNĐ`
                     : `💀 Thua, -${money(bet)} VNĐ.`) +
-                `\n💳 Còn: <b>${money(nb)} VNĐ</b>`);
+                `\n💳 Còn: <b>${money(nb)} VNĐ</b>`;
+            const kb = {
+                inline_keyboard: [[
+                    {
+                        text: `${HANDS[pick]} ${pick} lại`,
+                        callback_data: `rps:again:${pick}:${bet}`
+                    }],
+                    [{ text: "📋 MENU", callback_data: "menu:cat:main" }]]
+            };
+            if (played) {
+                await photoResult(chatId, played.messageId,
+                    await rpsFrame([
+                        Object.keys(HANDS).indexOf(bot) + 3
+                    ], false), text, kb)
+                    .catch(() => send(chatId, text, { reply_markup: kb }));
+                return;
+            }
+            await send(chatId, text, { reply_markup: kb });
         },
 
         "/pick": async (chatId, args) => {
@@ -91,5 +131,15 @@ module.exports = {
         "/spin — quay free mỗi giờ, trúng tới 20k\n" +
         "/rps keo|bua|bao &lt;tiền&gt; — oẳn tù tì ăn x1.95\n" +
         "/pick &lt;a&gt; | &lt;b&gt; ... — bot chọn hộ\n" +
-        "/countdown &lt;giây&gt; &lt;nội dung&gt; — đếm ngược\n"
+        "/countdown &lt;giây&gt; &lt;nội dung&gt; — đếm ngược\n",
+
+    callback: {
+        prefix: "rps:again:",
+        handler: async (query) => {
+            const parts = (query.data || "").split(":");
+            await module.exports.commands["/rps"](
+                query.message.chat.id,
+                [parts[2], parts[3]]);
+        }
+    }
 };

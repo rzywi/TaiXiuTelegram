@@ -61,10 +61,13 @@ portal.register("baucua", {
 
 function replayKB(pick, bet) {
     return {
-        inline_keyboard: [[
-            replay.btn(`${ICONS[pick]} Lại`, "baucua", pick, bet),
-            replay.portalBtn("baucua")
-        ]]
+        inline_keyboard: [
+            [
+                replay.btn(`${ICONS[pick]} Lại`, "baucua", pick, bet),
+                replay.portalBtn("baucua")
+            ],
+            [replay.menuBtn()]
+        ]
     };
 }
 

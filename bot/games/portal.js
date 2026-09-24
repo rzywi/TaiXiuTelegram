@@ -63,7 +63,8 @@ function portalKeyboard(game) {
             { text: "♾ ALL-IN", callback_data: `${base}:allin` },
             { text: "♻️ 10K", callback_data: `${base}:reset` }
         ],
-        ...def.playButtons
+        ...def.playButtons,
+        [{ text: "📋 MENU", callback_data: "menu:cat:main" }]
     ];
 
     return { inline_keyboard: rows };
@@ -252,8 +253,6 @@ async function handlePortalCallback(query) {
 
     if (!registered[game]) return;
 
-    /* Session có thể bị mất sau khi restart bot —
-       dựng lại từ chính nút vừa bấm, mức cược về 10k */
     if (!portals.has(chatId)) {
         portals.set(chatId, { game: game, bet: 10000 });
     }

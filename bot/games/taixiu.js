@@ -14,11 +14,14 @@ const DICE = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
 
 function replayKB(bet) {
     return {
-        inline_keyboard: [[
-            replay.btn("🔴 TÀI lại", "taixiu", "tai", bet),
-            replay.btn("⚪ XỈU lại", "taixiu", "xiu", bet),
-            replay.portalBtn("taixiu")
-        ]]
+        inline_keyboard: [
+            [
+                replay.btn("🔴 TÀI lại", "taixiu", "tai", bet),
+                replay.btn("⚪ XỈU lại", "taixiu", "xiu", bet),
+                replay.portalBtn("taixiu")
+            ],
+            [replay.menuBtn()]
+        ]
     };
 }
 

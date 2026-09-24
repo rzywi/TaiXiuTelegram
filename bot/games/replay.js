@@ -31,6 +31,13 @@ function portalBtn(game) {
     };
 }
 
+function menuBtn() {
+    return {
+        text: "📋 MENU",
+        callback_data: "menu:cat:main"
+    };
+}
+
 async function handleAgain(query) {
     const chatId = query.message.chat.id;
     const parts = (query.data || "").split(":");
@@ -62,6 +69,7 @@ async function handleAgain(query) {
 module.exports = {
     btn,
     portalBtn,
+    menuBtn,
     callback: {
         prefix: "again:",
         handler: handleAgain

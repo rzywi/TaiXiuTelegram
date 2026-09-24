@@ -12,10 +12,10 @@ const FACES = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
 
 function replayKB(guess, bet) {
     return {
-        inline_keyboard: [[
-            replay.btn(`🎲 ${guess} lại`, "dice", String(guess), bet),
-            { text: "🎲 Cổng cược", callback_data: "again:portal:taixiu" }
-        ]]
+        inline_keyboard: [
+            [replay.btn(`🎲 ${guess} lại`, "dice", String(guess), bet)],
+            [replay.menuBtn()]
+        ]
     };
 }
 

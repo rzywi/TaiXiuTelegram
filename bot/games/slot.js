@@ -4,23 +4,37 @@
 
 const core = require("../core");
 const { send, telegram, money, settle, checkBet } = core;
-const { textRoll } = require("./suspense");
+const { iconRowPng } = require("./diceimg");
+const { photoRoll, photoResult } = require("./suspense");
 const replay = require("./replay");
 
 const ICONS = ["🍒", "🍋", "🔔", "⭐", "💎", "7️⃣"];
+
+/* icon guồng → key emoji (7️⃣ keycap không có file riêng → máy slot) */
+const KEY_OF = {
+    "🍒": "cherry", "🍋": "lemon", "🔔": "bell",
+    "⭐": "star", "💎": "gem", "7️⃣": "seven",
+    "🍇": "grapes", "🍉": "melon", "❓": "back"
+};
 const SPINS = ["🍒", "🍋", "🔔", "⭐", "💎", "7️⃣", "🍇", "🍉"];
 
-function spinFrame() {
+/* lắc = 3 viên trắng in icon quay đổi liên tục, gieo sau */
+const frameImg = (rolls, shake) =>
+    iconRowPng(rolls.map(d => KEY_OF[SPINS[d % SPINS.length]]),
+        shake);
+
+function spinFrameKeys() {
     const p = () =>
-        SPINS[Math.floor(Math.random() * SPINS.length)];
-    return `🎰 [ ${p()} | ${p()} | ${p()} ]`;
+        Math.floor(Math.random() * SPINS.length);
+    return [p(), p(), p()];
 }
 
 function replayKB(bet) {
     return {
-        inline_keyboard: [[
-            replay.btn("🎰 Quay lại", "slot", "go", bet)
-        ]]
+        inline_keyboard: [
+            [replay.btn("🎰 Quay lại", "slot", "go", bet)],
+            [replay.menuBtn()]
+        ]
     };
 }
 
@@ -30,16 +44,16 @@ async function playQuick(chatId, bet) {
 
     const kb = replayKB(bet);
     const head = `💸 Cược <b>${money(bet)} VNĐ</b>`;
-    let msgId = null;
+    let played = null;
     try {
-        msgId = await textRoll(chatId, [
+        played = await photoRoll(chatId, frameImg, 3, [
             `${head}\n\n🎰 [ ❓ | ❓ | ❓ ]\n<i>Bỏ xu… kéo cần…</i>`,
-            `${head}\n\n${spinFrame()}\n<i>Guồng đang quay…</i>`,
-            `${head}\n\n${spinFrame()}\n<i>Guồng đang quay…</i> 🌀`,
-            `${head}\n\n${spinFrame()}\n<i>Dừng lại…</i>`
+            `${head}\n\n🎰 <i>Guồng đang quay…</i>`,
+            `${head}\n\n🎰 <i>Guồng đang quay…</i> 🌀`,
+            `${head}\n\n🎰 <i>Dừng lại…</i>`
         ]);
     } catch {
-        msgId = null;
+        played = null;
     }
 
     const pick = () =>
@@ -66,14 +80,13 @@ async function playQuick(chatId, bet) {
                 : `💀 Không trúng, -${money(bet)} VNĐ.`) +
         `\n💳 Còn: <b>${money(newBalance)} VNĐ</b>`;
 
-    if (msgId) {
-        await telegram("editMessageText", {
-            chat_id: chatId,
-            message_id: msgId,
-            text: text,
-            parse_mode: "HTML",
-            reply_markup: kb
-        }).catch(() => send(chatId, text, { reply_markup: kb }));
+    if (played) {
+        const keys = [ICONS.indexOf(a),
+                      ICONS.indexOf(b),
+                      ICONS.indexOf(c)];
+        await photoResult(chatId, played.messageId,
+            await frameImg(keys, false), text, kb)
+            .catch(() => send(chatId, text, { reply_markup: kb }));
         return;
     }
 

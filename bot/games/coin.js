@@ -4,17 +4,25 @@
 
 const core = require("../core");
 const { send, telegram, money, settle, checkBet } = core;
-const { textRoll } = require("./suspense");
+const { iconRowPng } = require("./diceimg");
+const { photoRoll, photoResult } = require("./suspense");
 const replay = require("./replay");
 
 const FACES = ["🌕 NGỬA", "🌑 SẤP"];
 
+/* lắc = 1 viên trắng in 🌕/🌑 đổi liên tục, gieo sau animation */
+const img = (rolls, shake) =>
+    iconRowPng([rolls[0] % 2 ? "ngua" : "sap"], shake);
+
 function replayKB(bet) {
     return {
-        inline_keyboard: [[
-            replay.btn("🌕 Ngửa lại", "coin", "ngua", bet),
-            replay.btn("🌑 Sấp lại", "coin", "sap", bet)
-        ]]
+        inline_keyboard: [
+            [
+                replay.btn("🌕 Ngửa lại", "coin", "ngua", bet),
+                replay.btn("🌑 Sấp lại", "coin", "sap", bet)
+            ],
+            [replay.menuBtn()]
+        ]
     };
 }
 
@@ -25,16 +33,16 @@ async function playQuick(chatId, side, bet) {
     const kb = replayKB(bet);
     const head = `💸 <b>${money(bet)} VNĐ</b> cửa ` +
         `<b>${side === "ngua" ? "NGỬA" : "SẤP"}</b>`;
-    let msgId = null;
+    let played = null;
     try {
-        msgId = await textRoll(chatId, [
+        played = await photoRoll(chatId, img, 1, [
             `${head}\n\n🪙 <b>Tung xu lên…</b>`,
             `${head}\n\n🪙 <b>Xu đang xoay…</b> 🌀`,
             `${head}\n\n🪙 <b>Xu đang xoay…</b> 🌀🌀`,
             `${head}\n\n✋ <b>Chụp! Mở tay…</b>`
         ]);
     } catch {
-        msgId = null;
+        played = null;
     }
 
     const flip =
@@ -54,14 +62,11 @@ async function playQuick(chatId, side, bet) {
             : `💀 THUA! Mất ${money(bet)} VNĐ.`) +
         `\n💳 Còn: <b>${money(newBalance)} VNĐ</b>`;
 
-    if (msgId) {
-        await telegram("editMessageText", {
-            chat_id: chatId,
-            message_id: msgId,
-            text: text,
-            parse_mode: "HTML",
-            reply_markup: kb
-        }).catch(() => send(chatId, text, { reply_markup: kb }));
+    if (played) {
+        await photoResult(chatId, played.messageId,
+            await img([flip === "ngua" ? 1 : 2], false),
+            text, kb)
+            .catch(() => send(chatId, text, { reply_markup: kb }));
         return;
     }
 

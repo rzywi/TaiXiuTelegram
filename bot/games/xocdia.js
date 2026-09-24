@@ -48,11 +48,14 @@ portal.register("xocdia", {
 
 function replayKB(bet) {
     return {
-        inline_keyboard: [[
-            replay.btn("⚖️ CHẴN lại", "xocdia", "chan", bet),
-            replay.btn("🔺 LẺ lại", "xocdia", "le", bet),
-            replay.portalBtn("xocdia")
-        ]]
+        inline_keyboard: [
+            [
+                replay.btn("⚖️ CHẴN lại", "xocdia", "chan", bet),
+                replay.btn("🔺 LẺ lại", "xocdia", "le", bet),
+                replay.portalBtn("xocdia")
+            ],
+            [replay.menuBtn()]
+        ]
     };
 }
 

@@ -211,12 +211,16 @@ async function bjFinish(chatId, outcome) {
             `\n💳 Còn: <b>${money(newBalance)} VNĐ</b>`,
         parse_mode: "HTML",
         reply_markup: {
-            inline_keyboard: [[
-                {
+            inline_keyboard: [
+                [{
                     text: "🃏 Ván mới cùng cược",
                     callback_data: `again:bj:go:${session.bet}`
-                }
-            ]]
+                }],
+                [{
+                    text: "📋 MENU",
+                    callback_data: "menu:cat:main"
+                }]
+            ]
         }
     }).catch(async () => {
         /* Nếu edit lỗi (tin nhắn cũ) thì gửi tin mới */

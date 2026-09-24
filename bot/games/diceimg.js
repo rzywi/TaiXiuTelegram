@@ -399,4 +399,34 @@ async function animalRowPng(keys, shake) {
 }
 
 
-module.exports = { diceRowPng, coinsRowPng, animalRowPng };
+/* keys: mảng key emoji bất kỳ (ngua/sap/cherry/keo/do/back...)
+   → hàng viên trắng có EMOJI CHUẨN giữa mặt.
+   Tải lỗi → giữ mặt trắng trơn (vẫn lắc được). */
+async function iconRowPng(keys, shake) {
+    const W = rowWidth(keys.length);
+    const px = newCanvas(W, H);
+    const J = shake ? 14 : 0;
+
+    const emojis = await Promise.all(keys.map(loadEmoji));
+
+    keys.forEach((key, i) => {
+        const jx = J ? Math.floor(Math.random() * J * 2) - J : 0;
+        const jy = J ? Math.floor(Math.random() * J * 2) - J : 0;
+        const x0 = PAD + i * (ITEM + GAP) + jx;
+        const y0 = PAD + jy;
+
+        drawDieBase(px, W, x0, y0, ITEM);
+
+        const em = emojis[i];
+        if (em) {
+            const target = Math.floor(ITEM * 0.68);
+            blendEmoji(px, W, em,
+                x0 + ITEM / 2, y0 + ITEM / 2, target);
+        }
+    });
+
+    return pngEncode(W, H, px);
+}
+
+
+module.exports = { diceRowPng, coinsRowPng, animalRowPng, iconRowPng };

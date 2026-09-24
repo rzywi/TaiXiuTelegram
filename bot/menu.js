@@ -343,6 +343,8 @@ async function onPick(chatId, key, val) {
 
 
 module.exports = {
+    MAIN,
+    startAsk,
     commands: {
         "/menu": async (chatId) => {
             await send(chatId,

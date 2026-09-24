@@ -4,22 +4,21 @@
 
 const core = require("../core");
 const { send, telegram, money, settle, checkBet } = core;
-const { textRoll } = require("./suspense");
+const { iconRowPng } = require("./diceimg");
+const { photoRoll, photoResult } = require("./suspense");
 const replay = require("./replay");
 
-const WHEEL = ["🔴", "⚫", "🟢", "🔴", "⚫", "🔴", "⚫", "🟢"];
-
-function wheelFrame() {
-    const i = Math.floor(Math.random() * WHEEL.length);
-    return WHEEL.slice(i).concat(WHEEL.slice(0, i))
-        .slice(0, 5).join(" ");
-}
+/* xúc xắc lắc → viên trắng in 🔴/⚫/🟢 đổi liên tục */
+const img = (rolls, shake) =>
+    iconRowPng(rolls.map(d =>
+        ["xanh", "do", "den"][d % 3]), shake);
 
 function replayKB(target, bet) {
     return {
-        inline_keyboard: [[
-            replay.btn(`🎡 ${target} lại`, "roulette", target, bet)
-        ]]
+        inline_keyboard: [
+            [replay.btn(`🎡 ${target} lại`, "roulette", target, bet)],
+            [replay.menuBtn()]
+        ]
     };
 }
 
@@ -29,16 +28,16 @@ async function playQuick(chatId, target, bet) {
 
     const kb = replayKB(target, bet);
     const head = `💸 Cược <b>${money(bet)} VNĐ</b> cửa <b>${target}</b>`;
-    let msgId = null;
+    let played = null;
     try {
-        msgId = await textRoll(chatId, [
-            `${head}\n\n🎡 <b>Bóng lăn…</b>\n${wheelFrame()}`,
-            `${head}\n\n🎡 <b>Bánh xe quay…</b>\n${wheelFrame()}`,
-            `${head}\n\n🎡 <b>Quay tít…</b>\n${wheelFrame()} 🌀`,
+        played = await photoRoll(chatId, img, 1, [
+            `${head}\n\n🎡 <b>Bóng lăn…</b>`,
+            `${head}\n\n🎡 <b>Bánh xe quay…</b>`,
+            `${head}\n\n🎡 <b>Quay tít…</b> 🌀`,
             `${head}\n\n🎡 <b>Bóng rơi vào ô…</b>`
         ]);
     } catch {
-        msgId = null;
+        played = null;
     }
 
     const number =
@@ -77,14 +76,11 @@ async function playQuick(chatId, target, bet) {
             : `💀 Thua -${money(bet)} VNĐ.`) +
         `\n💳 Còn: <b>${money(newBalance)} VNĐ</b>`;
 
-    if (msgId) {
-        await telegram("editMessageText", {
-            chat_id: chatId,
-            message_id: msgId,
-            text: text,
-            parse_mode: "HTML",
-            reply_markup: kb
-        }).catch(() => send(chatId, text, { reply_markup: kb }));
+    if (played) {
+        await photoResult(chatId, played.messageId,
+            await img([color === "xanh" ? 0
+                : color === "do" ? 1 : 2], false), text, kb)
+            .catch(() => send(chatId, text, { reply_markup: kb }));
         return;
     }
 

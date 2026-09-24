@@ -10,14 +10,41 @@ const zlib = require("zlib");
 
 const CACHE_DIR = path.join(__dirname, ".emoji-cache");
 
-/* Mã unicode emoji của 6 con bầu cua */
+/* Mã unicode emoji (file emoji_u<code>.png của Noto).
+   Bầu cua giữ nguyên; thêm bộ cho coin/slot/rps/roulette/bài. */
 const CODES = {
     bau: "1f383",  /* 🎃 */
     cua: "1f980",  /* 🦀 */
     tom: "1f990",  /* 🦐 */
     ca: "1f41f",   /* 🐟 */
     ga: "1f413",   /* 🐓 */
-    huou: "1f98c"  /* 🦌 */
+    huou: "1f98c", /* 🦌 */
+
+    ngua: "1f315",   /* 🌕 */
+    sap: "1f311",    /* 🌑 */
+
+    cherry: "1f352", /* 🍒 */
+    lemon: "1f34b",  /* 🍋 */
+    bell: "1f514",   /* 🔔 */
+    star: "2b50",    /* ⭐ */
+    gem: "1f48e",    /* 💎 */
+    seven: "1f3b0",  /* 🎰 (thay 7️⃣ — keycap không có file riêng) */
+    grapes: "1f347", /* 🍇 */
+    melon: "1f349",  /* 🍉 */
+
+    keo: "270c", /* ✌️ */
+    bua: "1f44a", /* ✊ */
+    bao: "270b",  /* ✋ */
+
+    do: "1f534",   /* 🔴 */
+    den: "26ab",   /* ⚫ */
+    xanh: "1f7e2", /* 🟢 */
+
+    back: "1f0cf",   /* 🃏 lưng bài */
+    heart: "2764",   /* ❤️ */
+    spade: "2660",   /* ♠️ */
+    diamond: "2666", /* ♦️ */
+    club: "2663"     /* ♣️ */
 };
 
 const URL_BASE =

@@ -61,6 +61,7 @@ server.listen(PORT, "0.0.0.0", () => {
 const modules = [
 
     require("./bot/menu"),
+    require("./bot/quick"),
     require("./bot/ai"),
 
     require("./bot/games/portal"),
@@ -95,7 +96,8 @@ const modules = [
 const commands = {
 
     "/start": (chatId) =>
-        core.send(chatId, HELP_TEXT),
+        core.send(chatId, HELP_TEXT,
+            { reply_markup: require("./bot/quick").KB }),
 
     "/help": (chatId) =>
         core.send(chatId, HELP_TEXT)
