@@ -3,7 +3,16 @@
 ========================= */
 
 const core = require("../core");
-const { send, money, settle, checkBet } = core;
+const { send, telegram, money, settle, checkBet } = core;
+const { textRoll } = require("./suspense");
+
+const WHEEL = ["🔴", "⚫", "🟢", "🔴", "⚫", "🔴", "⚫", "🟢"];
+
+function wheelFrame() {
+    const i = Math.floor(Math.random() * WHEEL.length);
+    return WHEEL.slice(i).concat(WHEEL.slice(0, i))
+        .slice(0, 5).join(" ");
+}
 
 
 module.exports = {
@@ -18,6 +27,19 @@ module.exports = {
                 return;
             }
             if (!await checkBet(chatId, bet)) return;
+
+            const head = `💸 Cược <b>${money(bet)} VNĐ</b> cửa <b>${target}</b>`;
+            let msgId = null;
+            try {
+                msgId = await textRoll(chatId, [
+                    `${head}\n\n🎡 <b>Bóng lăn…</b>\n${wheelFrame()}`,
+                    `${head}\n\n🎡 <b>Bánh xe quay…</b>\n${wheelFrame()}`,
+                    `${head}\n\n🎡 <b>Quay tít…</b>\n${wheelFrame()} 🌀`,
+                    `${head}\n\n🎡 <b>Bóng rơi vào ô…</b>`
+                ]);
+            } catch {
+                msgId = null;
+            }
 
             const number =
                 Math.floor(Math.random() * 37);
@@ -48,12 +70,24 @@ module.exports = {
                 color === "xanh" ? "🟢"
                     : color === "do" ? "🔴" : "⚫";
 
-            await send(chatId,
-                `🎡 Bánh xe quay… Ra: <b>${number} ${colorIcon}</b>\n\n` +
+            const text =
+                `🎡 Bánh xe dừng! Ra: <b>${number} ${colorIcon}</b>\n\n` +
                 (isWin
                     ? `🎉 Thắng +${money(win - bet)} VNĐ!`
                     : `💀 Thua -${money(bet)} VNĐ.`) +
-                `\n💳 Còn: <b>${money(newBalance)} VNĐ</b>`);
+                `\n💳 Còn: <b>${money(newBalance)} VNĐ</b>`;
+
+            if (msgId) {
+                await telegram("editMessageText", {
+                    chat_id: chatId,
+                    message_id: msgId,
+                    text: text,
+                    parse_mode: "HTML"
+                }).catch(() => send(chatId, text));
+                return;
+            }
+
+            await send(chatId, text);
         }
     },
 

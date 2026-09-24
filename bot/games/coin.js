@@ -3,7 +3,10 @@
 ========================= */
 
 const core = require("../core");
-const { send, money, settle, checkBet } = core;
+const { send, telegram, money, settle, checkBet } = core;
+const { textRoll } = require("./suspense");
+
+const FACES = ["🌕 NGỬA", "🌑 SẤP"];
 
 
 module.exports = {
@@ -18,6 +21,20 @@ module.exports = {
             }
             if (!await checkBet(chatId, bet)) return;
 
+            const head = `💸 <b>${money(bet)} VNĐ</b> cửa ` +
+                `<b>${side === "ngua" ? "NGỬA" : "SẤP"}</b>`;
+            let msgId = null;
+            try {
+                msgId = await textRoll(chatId, [
+                    `${head}\n\n🪙 <b>Tung xu lên…</b>`,
+                    `${head}\n\n🪙 <b>Xu đang xoay…</b> 🌀`,
+                    `${head}\n\n🪙 <b>Xu đang xoay…</b> 🌀🌀`,
+                    `${head}\n\n✋ <b>Chụp! Mở tay…</b>`
+                ]);
+            } catch {
+                msgId = null;
+            }
+
             const flip =
                 Math.random() < 0.5 ? "ngua" : "sap";
             const isWin = side === flip;
@@ -28,12 +45,24 @@ module.exports = {
                 chatId, "coin", bet, win, flip
             );
 
-            await send(chatId,
-                `🪙 Kết quả: <b>${flip === "ngua" ? "NGỬA" : "SẮP"}</b>\n` +
+            const text =
+                `🪙 Kết quả: <b>${flip === "ngua" ? FACES[0] : FACES[1]}</b>\n` +
                 (isWin
                     ? `🎉 THẮNG! Nhận về +${money(win)} VNĐ`
                     : `💀 THUA! Mất ${money(bet)} VNĐ.`) +
-                `\n💳 Còn: <b>${money(newBalance)} VNĐ</b>`);
+                `\n💳 Còn: <b>${money(newBalance)} VNĐ</b>`;
+
+            if (msgId) {
+                await telegram("editMessageText", {
+                    chat_id: chatId,
+                    message_id: msgId,
+                    text: text,
+                    parse_mode: "HTML"
+                }).catch(() => send(chatId, text));
+                return;
+            }
+
+            await send(chatId, text);
         }
     },
 

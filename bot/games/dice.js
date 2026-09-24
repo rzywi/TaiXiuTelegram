@@ -3,7 +3,11 @@
 ========================= */
 
 const core = require("../core");
-const { send, money, settle, checkBet } = core;
+const { send, telegram, money, settle, checkBet } = core;
+const { diceRowPng } = require("./diceimg");
+const { photoRoll, photoResult } = require("./suspense");
+
+const FACES = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
 
 
 module.exports = {
@@ -18,7 +22,24 @@ module.exports = {
             }
             if (!await checkBet(chatId, bet)) return;
 
-            const roll = Math.floor(Math.random() * 6) + 1;
+            const head = `💸 <b>${money(bet)} VNĐ</b> đoán <b>${guess}</b>`;
+            let played;
+            try {
+                played = await photoRoll(chatId,
+                    (r, s) => diceRowPng(r, s), 1,
+                    [
+                        `${head}\n\n🎲 <b>Bỏ xúc xắc vào chén…</b>`,
+                        `${head}\n\n🎲 <b>Lắc… Lắc…</b>`,
+                        `${head}\n\n🥣 <b>Úp xuống…</b>`,
+                        `${head}\n\n✨ <b>MỞ…</b>`
+                    ]);
+            } catch {
+                played = null;
+            }
+
+            const roll = played
+                ? played.rolls[0]
+                : Math.floor(Math.random() * 6) + 1;
             const isWin = guess === roll;
             const win = isWin ? Math.floor(bet * 5.8) : 0;
 
@@ -26,12 +47,21 @@ module.exports = {
                 chatId, "dice", bet, win, `đoán ${guess} ra ${roll}`
             );
 
-            await send(chatId,
-                `🎲 Xúc xắc ra: <b>${roll}</b>\n` +
+            const text =
+                `🎲 Xúc xắc ra: <b>${roll}</b> ${FACES[roll - 1]}\n` +
                 (isWin
                     ? `🎉 Chuẩn! Thắng +${money(win - bet)} VNĐ (x5.8)!`
                     : `💀 Sai, -${money(bet)} VNĐ.`) +
-                `\n💳 Còn: <b>${money(newBalance)} VNĐ</b>`);
+                `\n💳 Còn: <b>${money(newBalance)} VNĐ</b>`;
+
+            if (played) {
+                await photoResult(chatId, played.messageId,
+                    diceRowPng([roll]), text)
+                    .catch(() => send(chatId, text));
+                return;
+            }
+
+            await send(chatId, text);
         }
     },
 
