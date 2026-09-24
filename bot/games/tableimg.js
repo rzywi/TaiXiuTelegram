@@ -142,16 +142,16 @@ const FONT = {
     X: ["10001", "10001", "01010", "00100", "01010", "10001", "10001"],
     Y: ["10001", "10001", "01010", "00100", "00100", "00100", "00100"],
     Z: ["11111", "00001", "00010", "00100", "01000", "10000", "11111"],
-    0: ["01110", "10001", "10011", "10101", "11001", "10001", "01110"],
+    0: ["01110", "10001", "10001", "10001", "10001", "10001", "01110"],
     1: ["00100", "01100", "00100", "00100", "00100", "00100", "01110"],
     2: ["01110", "10001", "00001", "00110", "01000", "10000", "11111"],
     3: ["11111", "00010", "00100", "00010", "00001", "10001", "01110"],
     4: ["00010", "00110", "01010", "10010", "11111", "00010", "00010"],
     5: ["11111", "10000", "11110", "00001", "00001", "10001", "01110"],
-    6: ["00110", "01000", "10000", "11110", "10001", "10001", "01110"],
+    6: ["01110", "10000", "10000", "11110", "10001", "10001", "01110"],
     7: ["11111", "00001", "00010", "00100", "01000", "01000", "01000"],
     8: ["01110", "10001", "10001", "01110", "10001", "10001", "01110"],
-    9: ["01110", "10001", "10001", "01111", "00001", "00010", "01100"],
+    9: ["01110", "10001", "10001", "01110", "00001", "00001", "01110"],
     "-": ["00000", "00000", "00000", "11111", "00000", "00000", "00000"],
     "+": ["00000", "00100", "00100", "11111", "00100", "00100", "00000"],
     ".": ["00000", "00000", "00000", "00000", "00000", "01100", "01100"],
@@ -163,7 +163,13 @@ const FONT = {
     "?": ["01110", "10001", "00001", "00010", "00100", "00000", "00100"],
     " ": ["00000", "00000", "00000", "00000", "00000", "00000", "00000"]
 };
-function textW(s, sc) { return s.length * 6 * sc - sc; }
+function textW(s, sc) { return String(s).length * 6 * sc - sc; }
+/* chữ dài (tiền tỉ) → hạ cỡ chữ cho vừa maxW, không tràn khung */
+function fitSc(s, sc, maxW) {
+    s = String(s).toUpperCase();
+    while (sc > 1 && textW(s, sc) > maxW) sc--;
+    return sc;
+}
 function drawText(px, W, x, y, str, sc, color, align) {
     str = String(str).toUpperCase();
     let w = textW(str, sc);
@@ -182,6 +188,19 @@ function fmt(n) {
     const neg = Number(n) < 0 ? "-" : "";
     return neg + Math.abs(Math.round(Number(n))).toString()
         .replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+/* số tỉ tràn khung → rút gọn ASCII: 89,658,269,353 → 89.66B */
+function fmtShort(n) {
+    const a = Math.abs(Math.round(Number(n)));
+    const sign = Number(n) < 0 ? "-" : "";
+    const trim = (v) => {
+        let s = v.toFixed(2);
+        return s.replace(/\.?0+$/, "");
+    };
+    if (a >= 1e12) return sign + trim(a / 1e12) + "T";
+    if (a >= 1e9) return sign + trim(a / 1e9) + "B";
+    if (a >= 1e6) return sign + trim(a / 1e6) + "M";
+    return fmt(n);
 }
 
 /* ---------- MÀU ---------- */
@@ -405,12 +424,13 @@ function taixiuBoardPng(o) {
     drawText(px, W, X + 215, 132,
         o.shake ? "DANG LAC..." : win ? "BAN THANG" : "BAN THUA",
         6, WHITE, "c");
-    const amt = o.shake ? "..." :
-        (win ? "+" + fmt(o.diff) : "-" + fmt(o.bet));
-    drawText(px, W, X, 218, amt, 11, o.shake ? WHITE :
+    const amtRaw = o.shake ? "..." :
+        (win ? "+" + fmtShort(o.diff) : "-" + fmtShort(o.bet));
+    const amtSc = fitSc(amtRaw, 11, W - X - 40);
+    drawText(px, W, X, 218, amtRaw, amtSc, o.shake ? WHITE :
         win ? GREEN : NEON, "l");
     /* 2 hộp */
-    box(px, W, X, 400, 400, 150, "TIEN", "CUOC", fmt(o.bet), WHITE);
+    box(px, W, X, 400, 400, 150, "TIEN", "CUOC", fmtShort(o.bet), WHITE);
     box(px, W, X + 424, 400, 316, 150, "TONG", "DIEM",
         o.shake ? "?" : String(o.total), o.shake ? WHITE : NEON);
     return pngEncode(W, H, px);
@@ -419,7 +439,8 @@ function box(px, W, x, y, w, h, l1, l2, val, vcol) {
     fillRoundedRect(px, W, x, y, w, h, 24, PANEL);
     drawText(px, W, x + 28, y + 26, l1, 4, [130, 140, 155], "l");
     drawText(px, W, x + 28, y + 58, l2, 4, [130, 140, 155], "l");
-    drawText(px, W, x + w - 24, y + 52, val, 6, vcol, "r");
+    const sc = fitSc(val, 6, w - 180);
+    drawText(px, W, x + w - 24, y + 52, val, sc, vcol, "r");
 }
 
 module.exports = { baccaratPng, taixiuBoardPng };
