@@ -38,18 +38,25 @@ const db = mysql.createPool({
 ========================= */
 
 async function telegram(method, data) {
-    const response = await fetch(
-        `${TELEGRAM_API}/${method}`,
-        {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(data)
-        }
-    );
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12000);
+    try {
+        const response = await fetch(
+            `${TELEGRAM_API}/${method}`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(data),
+                signal: controller.signal
+            }
+        );
 
-    return response.json();
+        return response.json();
+    } finally {
+        clearTimeout(timer);
+    }
 }
 
 /* Gửi API dạng multipart (để upload ảnh/buffer) */

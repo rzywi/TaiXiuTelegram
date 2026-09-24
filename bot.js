@@ -60,6 +60,7 @@ server.listen(PORT, "0.0.0.0", () => {
 
 const modules = [
 
+    require("./bot/menu"),
     require("./bot/ai"),
 
     require("./bot/games/portal"),
@@ -643,23 +644,32 @@ async function poll() {
 
                     ) {
 
-                        plainTextHandlers.forEach(
-                            handler => {
+                        for (const handler of plainTextHandlers) {
 
-                                Promise.resolve(
+                            try {
 
-                                    handler(
+                                /* Menu trả true khi đã "nuốt" tin
+                                   (nhập số tiền, nội dung...) —
+                                   tin đó không lọt tiếp xuống AI */
+                                const swallowed =
+                                    await handler(
                                         update.message.chat.id,
                                         text
-                                    )
+                                    );
 
-                                )
-                                .catch(
-                                    console.error
-                                );
+                                if (swallowed === true) {
+                                    break;
+                                }
 
                             }
-                        );
+
+                            catch (error) {
+
+                                console.error(error);
+
+                            }
+
+                        }
 
                     }
 
