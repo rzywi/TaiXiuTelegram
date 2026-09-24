@@ -12,7 +12,8 @@ const KB = {
         [{ text: "📋 MENU" }, { text: "💰 Số dư" }],
         [{ text: "🎲 Tài Xỉu" }, { text: "🦀 Bầu Cua" }],
         [{ text: "🪙 Xóc Đĩa" }, { text: "🃏 Xì Dách" }],
-        [{ text: "🎰 Slot" }, { text: "🪙 Xu" }]
+        [{ text: "🎰 Slot" }, { text: "🪙 Xu" }],
+        [{ text: "🎉 Vui" }, { text: "💬 AI" }]
     ],
     resize_keyboard: true,
     is_persistent: true
@@ -23,11 +24,26 @@ function withKB(extra) {
 }
 
 /* text nút → hành động (tái dùng lệnh/cổng có sẵn) */
+const QUICK_BTNS = new Set([
+    "📋 MENU", "💰 Số dư",
+    "🎲 Tài Xỉu", "🦀 Bầu Cua",
+    "🪙 Xóc Đĩa", "🃏 Xì Dách",
+    "🎰 Slot", "🪙 Xu",
+    "🎉 Vui", "💬 AI"
+]);
+
 async function onButton(chatId, text) {
     const t = String(text || "").trim();
+    if (!QUICK_BTNS.has(t)) return false;
+
+    const menu = () => require("./menu");
     const portal = () => require("./games/portal");
     const run = (mod, cmd, args) =>
         require(mod).commands[cmd](chatId, args || []);
+
+    /* Đang nhập dở (vd: nhập tiền) mà bấm phím nhanh khác
+       → hủy nhập cũ để phím mới chạy, không bị "nuốt" nhầm */
+    menu().cancelPending(chatId);
 
     if (t === "📋 MENU") {
         await send(chatId,
@@ -42,6 +58,12 @@ async function onButton(chatId, text) {
     if (t === "🃏 Xì Dách") { await require("./menu").startAsk(chatId, "bj"); return true; }
     if (t === "🎰 Slot") { await run("./games/slot", "/slot", ["10000"]); return true; }
     if (t === "🪙 Xu") { await run("./games/coin", "/coin", ["ngua", "10000"]); return true; }
+    if (t === "🎉 Vui") {
+        await send(chatId, "🎉 <b>VUI (KIỂU BOT FB)</b>\n\nBấm là có — khỏi gõ:",
+            { reply_markup: { inline_keyboard: menu().FUN } });
+        return true;
+    }
+    if (t === "💬 AI") { await menu().startAsk(chatId, "ai"); return true; }
     return false;
 }
 
@@ -78,6 +100,11 @@ module.exports = {
                 { command: "daily", description: "Điểm danh nhận tiền" },
                 { command: "top", description: "Bảng xếp hạng" },
                 { command: "give", description: "Chuyển tiền" },
+                { command: "thinh", description: "Thả thính random" },
+                { command: "joke", description: "Truyện cười" },
+                { command: "luck", description: "Vận may hôm nay" },
+                { command: "boi", description: "Bói vui <tên>" },
+                { command: "hop", description: "Độ hợp nhau <a>|<b>" },
                 { command: "kb", description: "Bật bàn phím nhanh" }
             ]
         }).catch(() => {});

@@ -12,6 +12,20 @@ const { send, telegram, esc } = core;
 /* chatId -> { fn, expires } : câu hỏi đang chờ trả lời */
 const pending = new Map();
 
+function cancelPending(chatId) {
+    return pending.delete(chatId);
+}
+
+/* Phím nhanh ở chỗ chat (quick.js) — nếu đang nhập dở mà bấm
+   phím khác thì hủy nhập cũ, nhường cho phím nhanh xử lý */
+const QUICK_TEXTS = new Set([
+    "📋 MENU", "💰 Số dư",
+    "🎲 Tài Xỉu", "🦀 Bầu Cua",
+    "🪙 Xóc Đĩa", "🃏 Xì Dách",
+    "🎰 Slot", "🪙 Xu",
+    "🎉 Vui", "💬 AI"
+]);
+
 function ask(chatId, prompt, fn) {
     pending.set(chatId, {
         fn: fn,
@@ -63,7 +77,9 @@ const MAIN = [
     [{ text: "🛠 Tiện ích", callback_data: "menu:cat:tools" },
      { text: "🌐 Web & Ảnh", callback_data: "menu:cat:web" }],
     [{ text: "🎵 Nhạc", callback_data: "menu:cat:music" },
-     { text: "📝 Nhớ & Nhắc", callback_data: "menu:cat:memo" }]
+     { text: "📝 Nhớ & Nhắc", callback_data: "menu:cat:memo" }],
+    [{ text: "🎉 Vui (kiểu FB)", callback_data: "menu:cat:fun" },
+     { text: "🙋 Hỏi Linh (AI)", callback_data: "menu:ask:ai" }]
 ];
 
 const BACK = [{ text: "⬅️ Về", callback_data: "menu:cat:main" }];
@@ -101,6 +117,8 @@ const SUBS = {
          { text: "🔑 Mật khẩu", callback_data: "menu:ask:password" }],
         [{ text: "🆔 UUID", callback_data: "menu:run:uuid" },
          { text: "🕐 Giờ", callback_data: "menu:run:time" }],
+        [{ text: "🎲 Chọn hộ", callback_data: "menu:ask:pick" },
+         { text: "⏱ Đếm ngược", callback_data: "menu:ask:countdown" }],
         BACK
     ],
     web: [
@@ -126,6 +144,15 @@ const SUBS = {
          { text: "⏰ Hẹn giờ", callback_data: "menu:ask:remind" }],
         [{ text: "⏳ Đang chờ", callback_data: "menu:run:reminders" }],
         BACK
+    ],
+    fun: [
+        [{ text: "💘 Thính", callback_data: "menu:run:thinh" },
+         { text: "😂 Cười", callback_data: "menu:run:joke" }],
+        [{ text: "🍀 Vận may", callback_data: "menu:run:luck" },
+         { text: "🔮 Bói", callback_data: "menu:ask:boi" }],
+        [{ text: "💞 Hợp nhau", callback_data: "menu:ask:hop" },
+         { text: "💬 Hỏi Linh", callback_data: "menu:ask:ai" }],
+        BACK
     ]
 };
 
@@ -135,7 +162,8 @@ const TITLES = {
     tools: "🛠 <b>TIỆN ÍCH</b>\n\nChọn:",
     web: "🌐 <b>WEB & ẢNH</b>\n\nChọn:",
     music: "🎵 <b>NHẠC</b>\n\nChọn:",
-    memo: "📝 <b>NHỚ & NHẮC</b>\n\nChọn:"
+    memo: "📝 <b>NHỚ & NHẮC</b>\n\nChọn:",
+    fun: "🎉 <b>VUI (KIỂU BOT FB)</b>\n\nBấm là có — khỏi gõ:"
 };
 
 /* Lệnh chạy ngay, không cần nhập gì */
@@ -153,7 +181,10 @@ const RUNS = {
     uuid: ["./tools", "/uuid"],
     time: ["./tools", "/time"],
     notes: ["./notes", "/notes"],
-    reminders: ["./reminders", "/reminders"]
+    reminders: ["./reminders", "/reminders"],
+    thinh: ["./fun", "/thinh"],
+    joke: ["./fun", "/joke"],
+    luck: ["./fun", "/luck"]
 };
 
 
@@ -299,6 +330,12 @@ async function startAsk(chatId, key) {
         case "ai":
             return ask(chatId, "💬 Nhập câu hỏi cho AI:",
                 (t) => run("./ai", "/ask", chatId, [t]));
+        case "boi":
+            return ask(chatId, "🔮 Nhập tên cần bói:",
+                (t) => run("./fun", "/boi", chatId, [t]));
+        case "hop":
+            return ask(chatId, "💞 Nhập 2 tên, cách nhau bằng <code>|</code>:\nvd: <code>Anh | Linh</code>",
+                (t) => run("./fun", "/hop", chatId, [t]));
         case "addpoints":
             return askAmount(chatId, "Cộng tiền",
                 (a) => run("./points", "/addpoints", chatId, [String(a)]));
@@ -344,7 +381,9 @@ async function onPick(chatId, key, val) {
 
 module.exports = {
     MAIN,
+    FUN: SUBS.fun,
     startAsk,
+    cancelPending,
     commands: {
         "/menu": async (chatId) => {
             await send(chatId,
@@ -364,6 +403,10 @@ module.exports = {
     /* Chạy trước AI: "nuốt" tin nhập liệu (trả true),
        tin thường trả false cho lọt xuống AI */
     plainText: async (chatId, text) => {
+        /* Phím nhanh ở chỗ chat bấm lúc đang nhập dở
+           → không coi là câu trả lời, nhường cho quick.js */
+        if (QUICK_TEXTS.has(String(text || "").trim())) return false;
+
         const p = pending.get(chatId);
         if (!p) return false;
 
@@ -405,17 +448,33 @@ module.exports = {
                 const title = a === "main"
                     ? "🎰 <b>MENU CHÍNH</b>\n\nChọn nhóm chức năng — khỏi nhớ lệnh:"
                     : TITLES[a];
-                await telegram("editMessageText", {
+                /* Nút MENU có thể nằm trên tin ẢNH (kết quả game photo)
+                   → editMessageText lỗi, phải sửa caption thay vì text */
+                const edited = await telegram("editMessageText", {
                     chat_id: chatId,
                     message_id: query.message.message_id,
                     text: title,
                     parse_mode: "HTML",
                     reply_markup: { inline_keyboard: kb }
-                });
+                }).catch(() => null);
+                if (!edited || !edited.ok) {
+                    await telegram("editMessageCaption", {
+                        chat_id: chatId,
+                        message_id: query.message.message_id,
+                        caption: title,
+                        parse_mode: "HTML",
+                        reply_markup: { inline_keyboard: kb }
+                    }).catch(() => {});
+                }
                 return;
             }
 
             if (action === "portal") {
+                /* Xóa tin menu/ảnh cũ cho gọn rồi mở cổng mới */
+                await telegram("deleteMessage", {
+                    chat_id: chatId,
+                    message_id: query.message.message_id
+                }).catch(() => {});
                 await require("./games/portal").openPortal(chatId, a);
                 return;
             }

@@ -112,6 +112,8 @@ async function bjStart(chatId, bet) {
 async function bjHit(chatId) {
     const session = bjSessions.get(chatId);
     if (!session) {
+        await send(chatId,
+            "⏳ Ván xì dách cũ hết hạn (bot mới restart). Gõ /menu → Xì Dách chơi ván mới nhé.");
         return;
     }
 
@@ -140,6 +142,8 @@ async function bjHit(chatId) {
 async function bjStand(chatId) {
     const session = bjSessions.get(chatId);
     if (!session) {
+        await send(chatId,
+            "⏳ Ván xì dách cũ hết hạn (bot mới restart). Gõ /menu → Xì Dách chơi ván mới nhé.");
         return;
     }
 

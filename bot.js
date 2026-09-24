@@ -79,6 +79,7 @@ const modules = [
     require("./bot/points"),
     require("./bot/social"),
     require("./bot/extras"),
+    require("./bot/fun"),
     require("./bot/net"),
     require("./bot/notes"),
     require("./bot/reminders"),

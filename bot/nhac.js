@@ -234,6 +234,11 @@ module.exports = {
             if (parts[1] === "play") {
                 return playTrack(chatId, parseInt(parts[2]));
             }
+
+            /* Nút "🔄 Tìm lại" cũ (nhac:replay) → hỏi tên bài mới */
+            if (parts[1] === "replay") {
+                return require("./menu").startAsk(chatId, "nhac");
+            }
         }
     },
 
