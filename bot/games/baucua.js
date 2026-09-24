@@ -7,6 +7,7 @@ const { send, telegram, money, settle, checkBet } = core;
 const portal = require("./portal");
 const { animalRowPng } = require("./diceimg");
 const { photoRoll, photoResult } = require("./suspense");
+const replay = require("./replay");
 
 const ICONS = {
     bau: "🎃", cua: "🦀", tom: "🦐",
@@ -58,6 +59,69 @@ portal.register("baucua", {
     }
 });
 
+function replayKB(pick, bet) {
+    return {
+        inline_keyboard: [[
+            replay.btn(`${ICONS[pick]} Lại`, "baucua", pick, bet),
+            replay.portalBtn("baucua")
+        ]]
+    };
+}
+
+async function playQuick(chatId, pick, bet) {
+    bet = parseInt(bet);
+    if (!ICONS[pick] || !await checkBet(chatId, bet)) return;
+
+    const kb = replayKB(pick, bet);
+    const betLine = `💸 <b>${money(bet)} VNĐ</b> cửa ${ICONS[pick]}`;
+    const img = (rolls, shake) =>
+        animalRowPng(rolls.map(v => BY_VALUE[v - 1]), shake);
+    let played = null;
+    try {
+        played = await photoRoll(chatId, img, 3,
+            [
+                `${betLine}\n\n🥣 <b>Bỏ 3 hột vào bát…</b>`,
+                `${betLine}\n\n🥣 <b>LẮC! LẮC MẠNH!</b>`,
+                `${betLine}\n\n🥣 <b>Úp bát — giữ nguyên…</b>`,
+                `${betLine}\n\n✨ <b>MỞ BÁT…</b>`
+            ]);
+    } catch {
+        played = null;
+    }
+
+    const values = played
+        ? played.rolls
+        : [0, 0, 0].map(() =>
+            Math.floor(Math.random() * 6) + 1);
+    const rolled = values.map(v => BY_VALUE[v - 1]);
+    const matches =
+        rolled.filter(r => r === pick).length;
+
+    /* Trúng 0 lần = mất trắng, không hoàn cược */
+    const win = matches > 0
+        ? bet + bet * matches : 0;
+
+    const newBalance = await settle(
+        chatId, "baucua", bet, win, rolled.join(",")
+    );
+
+    const text =
+        `🥣 Bát xóc: ${rolled.map(r => ICONS[r]).join(" ")}\n\n` +
+        (matches > 0
+            ? `🎉 Trúng <b>${matches}</b> con — ăn +${money(bet * matches)} VNĐ!`
+            : `💀 Không trúng con nào, mất ${money(bet)} VNĐ.`) +
+        `\n💳 Còn: <b>${money(newBalance)} VNĐ</b>`;
+
+    if (played) {
+        await photoResult(chatId, played.messageId,
+            await img(values), text, kb)
+            .catch(() => send(chatId, text, { reply_markup: kb }));
+        return;
+    }
+
+    await send(chatId, text, { reply_markup: kb });
+}
+
 
 module.exports = {
     commands: {
@@ -78,57 +142,11 @@ module.exports = {
                     "Món: bầu, cua, ca, tom, ga, huou");
                 return;
             }
-            if (!await checkBet(chatId, bet)) return;
-
-            const betLine = `💸 <b>${money(bet)} VNĐ</b> cửa ${ICONS[pick]}`;
-            const img = (rolls, shake) =>
-                animalRowPng(rolls.map(v => BY_VALUE[v - 1]), shake);
-            let played;
-            try {
-                played = await photoRoll(chatId, img, 3,
-                    [
-                        `${betLine}\n\n🥣 <b>Bỏ 3 hột vào bát…</b>`,
-                        `${betLine}\n\n🥣 <b>LẮC! LẮC MẠNH!</b>`,
-                        `${betLine}\n\n🥣 <b>Úp bát — giữ nguyên…</b>`,
-                        `${betLine}\n\n✨ <b>MỞ BÁT…</b>`
-                    ]);
-            } catch {
-                played = null;
-            }
-
-            const values = played
-                ? played.rolls
-                : [0, 0, 0].map(() =>
-                    Math.floor(Math.random() * 6) + 1);
-            const rolled = values.map(v => BY_VALUE[v - 1]);
-            const matches =
-                rolled.filter(r => r === pick).length;
-
-            /* Trúng 0 lần = mất trắng, không hoàn cược */
-            const win = matches > 0
-                ? bet + bet * matches : 0;
-
-            const newBalance = await settle(
-                chatId, "baucua", bet, win, rolled.join(",")
-            );
-
-            const text =
-                `🥣 Bát xóc: ${rolled.map(r => ICONS[r]).join(" ")}\n\n` +
-                (matches > 0
-                    ? `🎉 Trúng <b>${matches}</b> con — ăn +${money(bet * matches)} VNĐ!`
-                    : `💀 Không trúng con nào, mất ${money(bet)} VNĐ.`) +
-                `\n💳 Còn: <b>${money(newBalance)} VNĐ</b>`;
-
-            if (played) {
-                await photoResult(chatId, played.messageId,
-                    await img(values), text)
-                    .catch(() => send(chatId, text));
-                return;
-            }
-
-            await send(chatId, text);
+            await playQuick(chatId, pick, bet);
         }
     },
+
+    replay: playQuick,
 
     help:
         "━━━ 🦀 <b>BẦU CUA TÔM CÁ</b> ━━━\n" +

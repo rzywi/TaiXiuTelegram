@@ -209,7 +209,15 @@ async function bjFinish(chatId, outcome) {
             bjTableText(session, true) +
             `\n\n${resultText}` +
             `\n💳 Còn: <b>${money(newBalance)} VNĐ</b>`,
-        parse_mode: "HTML"
+        parse_mode: "HTML",
+        reply_markup: {
+            inline_keyboard: [[
+                {
+                    text: "🃏 Ván mới cùng cược",
+                    callback_data: `again:bj:go:${session.bet}`
+                }
+            ]]
+        }
     }).catch(async () => {
         /* Nếu edit lỗi (tin nhắn cũ) thì gửi tin mới */
         await send(chatId,
@@ -240,5 +248,9 @@ module.exports = {
 
     help:
         "━━━ 🃏 <b>XÌ DÁCH</b> ━━━\n" +
-        "/bj &lt;tiền&gt; — chơi với nhà cái (nút Rút/Dừng), xì bàng x2.5\n"
+        "/bj &lt;tiền&gt; — chơi với nhà cái (nút Rút/Dừng), xì bàng x2.5\n",
+
+    replay: async (chatId, pick, bet) => {
+        await bjStart(chatId, parseInt(bet));
+    }
 };

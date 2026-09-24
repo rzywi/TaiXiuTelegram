@@ -63,7 +63,7 @@ async function photoRoll(chatId, imageFor, n, captions, frameMs) {
 }
 
 /* Đổi khung ảnh suspense thành ảnh kết quả thật */
-async function photoResult(chatId, messageId, png, caption) {
+async function photoResult(chatId, messageId, png, caption, keyboard) {
     const form = new FormData();
     form.append("chat_id", String(chatId));
     form.append("message_id", String(messageId));
@@ -74,11 +74,17 @@ async function photoResult(chatId, messageId, png, caption) {
         parse_mode: "HTML"
     }));
     form.append("dice", pngPart(png), "dice.png");
+
+    if (keyboard) {
+        form.append("reply_markup", JSON.stringify(keyboard));
+    }
+
     return core.telegramForm("editMessageMedia", form);
 }
 
-/* frames[0] gửi mới, các frame sau edit tại chỗ */
-async function textRoll(chatId, frames, frameMs) {
+/* frames[0] gửi mới, các frame sau edit tại chỗ.
+   keyboard gán vào tin cuối (nút chơi lại) */
+async function textRoll(chatId, frames, frameMs, keyboard) {
     const ms = frameMs || 600;
 
     const sent = await core.send(chatId, frames[0]);
@@ -90,12 +96,29 @@ async function textRoll(chatId, frames, frameMs) {
             chat_id: chatId,
             message_id: messageId,
             text: frames[i],
-            parse_mode: "HTML"
+            parse_mode: "HTML",
+            reply_markup: i === frames.length - 1 && keyboard
+                ? keyboard
+                : undefined
         }).catch(() => {});
     }
 
     return messageId;
 }
 
+/* Gắn nút chơi lại vào tin kết quả đã có */
+async function attachReplay(chatId, messageId, text, keyboard, isPhoto) {
+    if (isPhoto) {
+        return null; // ảnh đã gắn nút lúc photoResult
+    }
+    await core.telegram("editMessageText", {
+        chat_id: chatId,
+        message_id: messageId,
+        text: text,
+        parse_mode: "HTML",
+        reply_markup: keyboard
+    }).catch(() => {});
+}
 
-module.exports = { photoRoll, photoResult, textRoll };
+
+module.exports = { photoRoll, photoResult, textRoll, attachReplay };

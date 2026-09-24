@@ -64,6 +64,7 @@ const modules = [
     require("./bot/ai"),
 
     require("./bot/games/portal"),
+    require("./bot/games/replay"),
     require("./bot/games/taixiu"),
     require("./bot/games/baucua"),
     require("./bot/games/xocdia"),

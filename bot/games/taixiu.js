@@ -8,8 +8,19 @@ const { send, telegram, money, settle, checkBet } = core;
 const portal = require("./portal");
 const { diceRowPng } = require("./diceimg");
 const { photoRoll, photoResult } = require("./suspense");
+const replay = require("./replay");
 
 const DICE = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
+
+function replayKB(bet) {
+    return {
+        inline_keyboard: [[
+            replay.btn("🔴 TÀI lại", "taixiu", "tai", bet),
+            replay.btn("⚪ XỈU lại", "taixiu", "xiu", bet),
+            replay.portalBtn("taixiu")
+        ]]
+    };
+}
 
 portal.register("taixiu", {
     title: "🎲 CỔNG ĐẶT CỬ TÀI XỈU",
@@ -48,6 +59,61 @@ portal.register("taixiu", {
     }
 });
 
+/* Chơi nhanh 1 ván, xong gắn nút chơi lại ngay dưới kết quả */
+async function playQuick(chatId, choice, bet) {
+    bet = parseInt(bet);
+    if (!await checkBet(chatId, bet)) return;
+
+    const kb = replayKB(bet);
+    const betLine = `💸 <b>${money(bet)} VNĐ</b> cửa ` +
+        `<b>${choice === "tai" ? "TÀI 🔴" : "XỈU ⚪"}</b>`;
+    let played = null;
+    try {
+        played = await photoRoll(chatId,
+            (r, s) => diceRowPng(r, s), 3,
+            [
+                `${betLine}\n\n🎲 <b>Bỏ xúc xắc vào bát…</b>`,
+                `${betLine}\n\n🎲 <b>Lắc mạnh… CLACK CLACK!</b>`,
+                `${betLine}\n\n🥣 <b>Úp bát xuống bàn…</b>`,
+                `${betLine}\n\n✨ <b>MỞ BÁT…</b>`
+            ]);
+    } catch {
+        played = null;
+    }
+
+    const [d1, d2, d3] = played
+        ? played.rolls
+        : [0, 0, 0].map(() =>
+            Math.floor(Math.random() * 6) + 1);
+    const total = d1 + d2 + d3;
+    const resultName = total >= 11 ? "tai" : "xiu";
+    const isWin = choice === resultName;
+    const win = isWin ? Math.floor(bet * 1.95) : 0;
+
+    const newBalance = await settle(
+        chatId, "taixiu", bet, win,
+        `${d1}+${d2}+${d3}=${total} ${resultName}`
+    );
+
+    const text =
+        `🎲 ${DICE[d1 - 1]} ${DICE[d2 - 1]} ${DICE[d3 - 1]}` +
+        ` = <b>${total}</b>\n` +
+        `Kết quả: <b>${resultName === "tai" ? "TÀI 🔴" : "XỈU ⚪"}</b>\n\n` +
+        (isWin
+            ? `🎉 THẮNG! Nhận về +${money(win)} VNĐ`
+            : `💀 THUA! Mất ${money(bet)} VNĐ.`) +
+        `\n💳 Còn: <b>${money(newBalance)} VNĐ</b>`;
+
+    if (played) {
+        await photoResult(chatId, played.messageId,
+            diceRowPng([d1, d2, d3]), text, kb)
+            .catch(() => send(chatId, text, { reply_markup: kb }));
+        return;
+    }
+
+    await send(chatId, text, { reply_markup: kb });
+}
+
 
 module.exports = {
     commands: {
@@ -66,60 +132,11 @@ module.exports = {
                 await send(chatId, "Dùng: /taixiu tai|xiu <tiền>");
                 return;
             }
-            if (!await checkBet(chatId, bet)) return;
-
-            /* Animation lắc kiểu bàn thật: 1 ảnh, mặt đổi 4 khung,
-               kết quả gieo SAU animation */
-            const betLine = `💸 <b>${money(bet)} VNĐ</b> cửa ` +
-                `<b>${choice === "tai" ? "TÀI 🔴" : "XỈU ⚪"}</b>`;
-            let result;
-            try {
-                result = await photoRoll(chatId,
-                    (r, s) => diceRowPng(r, s), 3,
-                    [
-                        `${betLine}\n\n🎲 <b>Bỏ xúc xắc vào bát…</b>`,
-                        `${betLine}\n\n🎲 <b>Lắc mạnh… CLACK CLACK!</b>`,
-                        `${betLine}\n\n🥣 <b>Úp bát xuống bàn…</b>`,
-                        `${betLine}\n\n✨ <b>MỞ BÁT…</b>`
-                    ]);
-            } catch {
-                result = null;
-            }
-
-            const [d1, d2, d3] = result
-                ? result.rolls
-                : [0, 0, 0].map(() =>
-                    Math.floor(Math.random() * 6) + 1);
-            const total = d1 + d2 + d3;
-            const resultName = total >= 11 ? "tai" : "xiu";
-            const isWin = choice === resultName;
-            const win = isWin
-                ? Math.floor(bet * 1.95) : 0;
-
-            const newBalance = await settle(
-                chatId, "taixiu", bet, win,
-                `${d1}+${d2}+${d3}=${total} ${resultName}`
-            );
-
-            const text =
-                `🎲 ${DICE[d1 - 1]} ${DICE[d2 - 1]} ${DICE[d3 - 1]}` +
-                ` = <b>${total}</b>\n` +
-                `Kết quả: <b>${resultName === "tai" ? "TÀI 🔴" : "XỈU ⚪"}</b>\n\n` +
-                (isWin
-                    ? `🎉 THẮNG! Nhận về +${money(win)} VNĐ`
-                    : `💀 THUA! Mất ${money(bet)} VNĐ.`) +
-                `\n💳 Còn: <b>${money(newBalance)} VNĐ</b>`;
-
-            if (result) {
-                await photoResult(chatId, result.messageId,
-                    diceRowPng([d1, d2, d3]), text)
-                    .catch(() => send(chatId, text));
-                return;
-            }
-
-            await send(chatId, text);
+            await playQuick(chatId, choice, bet);
         }
     },
+
+    replay: playQuick,
 
     help:
         "━━━ 🎰 <b>CỔNG ĐẶT CỬ TÀI XỈU</b> ━━━\n" +
