@@ -30,7 +30,10 @@ const DEFAULT_SUSPENSE = [
 ];
 
 /* gameKey -> { title, rules, playButtons, diceCount,
-                imageFor(rolls), play(pick, bet, rolls) } */
+                imageFor(rolls, shake, ctx), play(pick, bet, rolls),
+                roll() custom } 
+   ctx = { chatId, bet, result } — game board (taixiu/baccarat)
+   cần bet/kết quả để vẽ ảnh */
 const registered = {};
 
 function register(gameKey, def) {
@@ -175,7 +178,9 @@ async function textSuspense(chatId) {
     const p = portals.get(chatId);
     const def = registered[p.game];
 
-    p.lastRolls = roll(def.diceCount || 3);
+    p.lastRolls = typeof def.roll === "function"
+        ? def.roll()
+        : roll(def.diceCount || 3);
 
     const frames = def.suspense || DEFAULT_SUSPENSE;
     await sendPortal(chatId, frames[0]);
@@ -193,8 +198,9 @@ async function textSuspense(chatId) {
     await sleep(550);
 }
 
-/* Lắc kịch tính: MỘT tin ảnh xúc xắc ngang, mặt đổi liên tục */
-async function playWithSuspense(chatId) {
+/* ctx có thể là { dice, shake, hist, bet, total, diff, isWin } (taixiu)
+   hoặc { player, banker, ..., hide } (baccarat) → truyền thẳng vào board */
+async function playWithSuspense(chatId, pick) {
     const p = portals.get(chatId);
     const def = registered[p.game];
 
@@ -205,16 +211,22 @@ async function playWithSuspense(chatId) {
     }
 
     const n = def.diceCount || 3;
+    const rollFn = typeof def.roll === "function" ? def.roll : roll;
+    const shakeCtx = (rolls) => typeof def.shakeCtx === "function"
+        ? def.shakeCtx(chatId, p.bet, pick, rolls, true)
+        : undefined;
     const betLine = `💸 <b>${money(p.bet)} VNĐ</b> trên bàn`;
-    const shakes = [
-        `${betLine}\n\n🎲 <b>Lắc lắc lắc…</b>`,
-        `${betLine}\n\n🎲 <b>Lắc đều lắc đều…</b>`,
-        `${betLine}\n\n🥣 <b>Đậy bát, lắc tiếp…</b>`,
-        `${betLine}\n\n✨ <b>Sắp mở bát…</b>`
-    ];
+    const shakes = typeof def.shakes === "function"
+        ? def.shakes(chatId, p.bet, pick)
+        : [
+            `${betLine}\n\n🎲 <b>Lắc lắc lắc…</b>`,
+            `${betLine}\n\n🎲 <b>Lắc đều lắc đều…</b>`,
+            `${betLine}\n\n🥣 <b>Đậy bát, lắc tiếp…</b>`,
+            `${betLine}\n\n✨ <b>Sắp mở bát…</b>`
+        ];
 
     /* Tin duy nhất: ảnh xúc xắc ngang đang rung lắc */
-    const shakePng = await def.imageFor(roll(n), true);
+    const shakePng = await def.imageFor(rollFn(n), true, shakeCtx(rollFn(n)));
     const sent = await sendDicePhoto(chatId,
         shakePng, shakes[0])
         .catch(() => null);
@@ -228,7 +240,7 @@ async function playWithSuspense(chatId) {
     /* Mặt xúc xắc xoay + rung vị trí liên tục */
     for (let i = 1; i < shakes.length; i++) {
         await sleep(SHAKE_MS);
-        const framePng = await def.imageFor(roll(n), true);
+        const framePng = await def.imageFor(rollFn(n), true, shakeCtx(rollFn(n)));
         await editDicePhoto(chatId, p.messageId,
             framePng, shakes[i])
             .catch(() => {});
@@ -236,9 +248,31 @@ async function playWithSuspense(chatId) {
     await sleep(SHAKE_MS);
 
     /* Kết quả cuối cùng do bot quyết định */
-    p.lastRolls = roll(n);
+    p.lastRolls = rollFn(n);
+    p.resultCtx = undefined;
+    if (typeof def.resultCtx === "function") {
+        try {
+            const ctx = def.resultCtx(chatId, p.bet, pick, p.lastRolls);
+            if (ctx !== undefined) p.resultCtx = ctx;
+        } catch {}
+    }
 }
 
+
+/* ctx kết quả cho ảnh board: game có resultCtx() tự dựng
+   (taixiu cần bet/total/lời, baccarat cần bài/điểm),
+   mặc định truyền p.resultCtx của playWithSuspense */
+function resultCtx(chatId, p, r) {
+    const def = registered[p.game];
+    if (typeof def.resultCtx === "function" && r) {
+        try {
+            const ctx = def.resultCtx(chatId, p.bet, p.lastPick,
+                p.lastRolls, r);
+            if (ctx !== undefined) return ctx;
+        } catch {}
+    }
+    return p.resultCtx;
+}
 
 /* ---------- XỬ LÝ NÚT BẤM ---------- */
 
@@ -297,10 +331,10 @@ async function handlePortalCallback(query) {
         /* Trừ tiền cược NGAY LẬP TỨC trước khi lắc */
         const afterBet = await deduct(chatId, p.bet);
 
-        await playWithSuspense(chatId);
-
         const pick = parts[3];
         const def = registered[p.game];
+        p.lastPick = pick;
+        await playWithSuspense(chatId, pick);
         const rolls = p.lastRolls || [];
 
         /* Game tự tính: { win (tổng nhận về), outcomeText, detail } */
@@ -326,7 +360,7 @@ async function handlePortalCallback(query) {
 
         if (def.imageFor && p.messageId) {
             /* Khung cuối: ảnh kết quả + dòng tiền + nút cược */
-            const resultPng = await def.imageFor(rolls);
+            const resultPng = await def.imageFor(rolls, false, resultCtx(chatId, p, r));
             await editDicePhoto(chatId, p.messageId,
                 resultPng,
                 await portalText(chatId, p.game, resultText),

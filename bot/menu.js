@@ -87,9 +87,10 @@ const BACK = [{ text: "⬅️ Về", callback_data: "menu:cat:main" }];
 const SUBS = {
     game: [
         [{ text: "🎲 Tài Xỉu", callback_data: "menu:portal:taixiu" },
-         { text: "🦀 Bầu Cua", callback_data: "menu:portal:baucua" }],
-        [{ text: "🪙 Xóc Đĩa", callback_data: "menu:portal:xocdia" },
-         { text: "🃏 Xì Dách", callback_data: "menu:ask:bj" }],
+         { text: "🂡 Baccarat", callback_data: "menu:portal:baccarat" }],
+        [{ text: "🦀 Bầu Cua", callback_data: "menu:portal:baucua" },
+         { text: "🪙 Xóc Đĩa", callback_data: "menu:portal:xocdia" }],
+        [{ text: "🃏 Xì Dách", callback_data: "menu:ask:bj" }],
         [{ text: "🎡 Roulette", callback_data: "menu:ask:roulette" },
          { text: "🔼 Cao/Thấp", callback_data: "menu:ask:hilo" }],
         [{ text: "🎰 Slot", callback_data: "menu:ask:slot" },

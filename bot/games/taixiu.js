@@ -6,11 +6,40 @@
 const core = require("../core");
 const { send, telegram, money, settle, checkBet } = core;
 const portal = require("./portal");
-const { diceRowPng } = require("./diceimg");
+const { taixiuBoardPng } = require("./tableimg");
 const { photoRoll, photoResult } = require("./suspense");
 const replay = require("./replay");
 
 const DICE = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
+
+/* lịch sử TÀI/XỈU cho board (RAM — restart reset, DB vẫn đủ) */
+const txHist = new Map();
+function histOf(chatId) {
+    return txHist.get(chatId) || [];
+}
+function pushHist(chatId, r) {
+    const h = histOf(chatId).concat([r]).slice(-10);
+    txHist.set(chatId, h);
+    return h;
+}
+function boardOf(dice, o) {
+    const d = (o && Array.isArray(o.dice) && o.dice.length === 3)
+        ? o.dice : dice;
+    return taixiuBoardPng({
+        dice: d, shake: o ? !!o.shake : true,
+        hist: (o && o.hist) || [], bet: (o && o.bet) || 0,
+        total: o && o.total, diff: o && o.diff, isWin: o && o.isWin
+    });
+}
+function resultOf(chatId, bet, rolls, win) {
+    const [d1, d2, d3] = rolls;
+    const total = d1 + d2 + d3;
+    const res = total >= 11 ? "tai" : "xiu";
+    return {
+        dice: rolls, shake: false, hist: pushHist(chatId, res),
+        bet, total, diff: win - bet, isWin: win > 0
+    };
+}
 
 function replayKB(bet) {
     return {
@@ -29,11 +58,22 @@ portal.register("taixiu", {
     title: "🎲 CỔNG ĐẶT CỬ TÀI XỈU",
     rules: "🔴 TÀI (11-18) · ⚪ XỈU (3-10) - x1,95",
 
-    /* 3 xúc xắc — vẽ ảnh hàng ngang khi lắc và ra kết quả */
+    /* 3 xúc xắc — board tối neon (lắc rung, kết quả đầy đủ tiền/số) */
     diceCount: 3,
 
-    /* Ảnh xúc xắc xếp hàng ngang (lúc lắc có rung, kết quả đứng yên) */
-    imageFor: (rolls, shake) => diceRowPng(rolls, shake),
+    /* Ảnh board: lúc lắc dùng dice vừa gieo, kết quả tính đủ ở resultCtx */
+    imageFor: (rolls, shake, ctx) => boardOf(rolls, ctx),
+    shakeCtx: (chatId, bet, pick, rolls) =>
+        ({ dice: rolls, shake: true, hist: histOf(chatId), bet }),
+    shakes: (chatId, bet) => [
+        `💸 <b>${money(bet)} VNĐ</b> trên bàn\n\n🎲 <b>Bỏ xúc xắc vào bát…</b>`,
+        `💸 <b>${money(bet)} VNĐ</b> trên bàn\n\n🎲 <b>Lắc mạnh… CLACK CLACK!</b>`,
+        `💸 <b>${money(bet)} VNĐ</b> trên bàn\n\n🥣 <b>Úp bát xuống bàn…</b>`,
+        `💸 <b>${money(bet)} VNĐ</b> trên bàn\n\n✨ <b>MỞ BÁT…</b>`
+    ],
+    resultCtx: (chatId, bet, pick, rolls, r) =>
+        r ? resultOf(chatId, bet, rolls, r.win)
+          : { dice: rolls, shake: true, hist: histOf(chatId), bet },
 
     playButtons: [
         [
@@ -70,10 +110,12 @@ async function playQuick(chatId, choice, bet) {
     const kb = replayKB(bet);
     const betLine = `💸 <b>${money(bet)} VNĐ</b> cửa ` +
         `<b>${choice === "tai" ? "TÀI 🔴" : "XỈU ⚪"}</b>`;
+    const img = (rolls, shake, ctx) => boardOf(rolls, ctx);
     let played = null;
     try {
         played = await photoRoll(chatId,
-            (r, s) => diceRowPng(r, s), 3,
+            (r) => img(r, true,
+                { dice: r, shake: true, hist: histOf(chatId), bet }), 3,
             [
                 `${betLine}\n\n🎲 <b>Bỏ xúc xắc vào bát…</b>`,
                 `${betLine}\n\n🎲 <b>Lắc mạnh… CLACK CLACK!</b>`,
@@ -109,7 +151,8 @@ async function playQuick(chatId, choice, bet) {
 
     if (played) {
         await photoResult(chatId, played.messageId,
-            diceRowPng([d1, d2, d3]), text, kb)
+            taixiuBoardPng(resultOf(chatId, bet, [d1, d2, d3], win)),
+            text, kb)
             .catch(() => send(chatId, text, { reply_markup: kb }));
         return;
     }

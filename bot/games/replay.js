@@ -9,6 +9,7 @@ const FILE_OF = {
     taixiu: "taixiu",
     xocdia: "xocdia",
     baucua: "baucua",
+    baccarat: "baccarat",
     coin: "coin",
     dice: "dice",
     slot: "slot",

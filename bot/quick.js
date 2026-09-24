@@ -87,6 +87,7 @@ module.exports = {
             commands: [
                 { command: "menu", description: "Mở menu bấm nút" },
                 { command: "taixiu", description: "Cổng Tài Xỉu" },
+                { command: "baccarat", description: "Baccarat CON vs CAI" },
                 { command: "baucua", description: "Cổng Bầu Cua" },
                 { command: "xocdia", description: "Cổng Xóc Đĩa" },
                 { command: "bj", description: "Xì dách <tiền>" },
