@@ -74,6 +74,8 @@ const modules = [
     require("./bot/games/dice"),
 
     require("./bot/points"),
+    require("./bot/social"),
+    require("./bot/extras"),
     require("./bot/notes"),
     require("./bot/reminders"),
     require("./bot/nhac"),
